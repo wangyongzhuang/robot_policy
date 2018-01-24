@@ -5,6 +5,7 @@ from robot_config import *
 from robot_environ import *
 from robot_model import cnn
 from robot_client import *
+from robot_agent import *
 
 import pdb
 
@@ -25,6 +26,7 @@ r_1 = tf.placeholder(dtype=tf.float32, shape=[2, 2*flag.mov_num+1])
 r_2 = tf.placeholder(dtype=tf.float32, shape=[2, 2*flag.mov_num+1])
 
 # loss, policy-based
+# without not shoot reward
 loss = tf.reduce_mean((-1 * tf.log(cnn_1.q_p + 1e-8) * r_1) + (-1 * tf.log(cnn_2.q_p + 1e-8) * r_2))
 
 
@@ -44,15 +46,15 @@ sess.run(tf.global_variables_initializer())
 # train
 info_1, info_2, map_img = get_init()
 for global_step in range(flag.steps):
-    if global_step%1000==0:
+    if global_step%300==0:
         info_1, info_2, map_img = get_init()
     act_1_p, act_2_p = sess.run([cnn_1.q_p, cnn_2.q_p], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img})
 
     # environ and optimize
-    if global_step%2==0:
-        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
+    if global_step%10==0:
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
     else:
-        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 

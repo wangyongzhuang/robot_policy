@@ -5,7 +5,7 @@ import pygame
 import pdb
 scale = 0.1
 robot_size = [int(500*scale), int(500*scale)]
-act_dict = [-3, -2, -1, 0, 1, 2, 3]
+act_dict = [-12, -8, -4, 0, 4, 8, 12]
 d_size = [_/2 for _ in robot_size]
 
 def _sign(x):
@@ -248,33 +248,16 @@ def get_new_info(info_pre, state):
     return info_pre
 
 def get_init():
-    info_1 = [[30, 30, 100, 0],  [30, 470, 100, 0]]
-    info_2 = [[770, 30, 100,0 ], [770, 470, 100, 0]]
+    info_1 = [[30, 420, 100, 0],  [30, 470, 100, 0]]
+    info_2 = [[770, 420, 100,0 ], [770, 470, 100, 0]]
     raw_map_img, _ = create_raw_map_img()
 
     map_img_new = draw_pos(info_1, info_2, raw_map_img)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX'):
+def environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
     # info[2,4]: [x,y,blood,buff]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
-
-    print 'info:'
-    print info_1
-    print info_2
-
-    act_1 = []
-    act_1.append([np.argmax(act_1_p[0,:flag.mov_num]), np.argmax(act_1_p[0,flag.mov_num:2*flag.mov_num]), int(act_1_p[0,-1]>0.5)])
-    act_1.append([np.argmax(act_1_p[1,:flag.mov_num]), np.argmax(act_1_p[1,flag.mov_num:2*flag.mov_num]), int(act_1_p[1,-1]>0.5)])
-
-    act_2 = []
-    act_2.append([np.argmax(act_2_p[0,:flag.mov_num]), np.argmax(act_2_p[0,flag.mov_num:2*flag.mov_num]), int(act_2_p[0,-1]>0.5)])
-    act_2.append([np.argmax(act_2_p[1,:flag.mov_num]), np.argmax(act_2_p[1,flag.mov_num:2*flag.mov_num]), int(act_2_p[1,-1]>0.5)])
-    '''
-    print '\nact:'
-    print act_1
-    print act_2
-    '''
 
     # pos+pre
     map_img = draw_pos(info_1, info_2, raw_map_img)
@@ -286,20 +269,11 @@ def environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX'):
     print '\nstate:'
     print state_1
     print state_2
-    '''
-
-    print '\nreward:'
-    print reward_1
-    print reward_2
-    '''
 
     # new info and map
     info_1_new = [get_new_info(info_1[0], state_1[0]), get_new_info(info_1[1], state_1[1])]
     info_2_new = [get_new_info(info_2[0], state_2[0]), get_new_info(info_2[1], state_2[1])]
-    '''
-    print 'info_1_new', info_1_new
-    print 'info_2_new', info_2_new
-    '''
+
     map_img_new = draw_pos(info_1_new, info_2_new, raw_map_img)
 
 

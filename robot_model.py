@@ -53,4 +53,5 @@ class cnn():
 
         self.logits = tf.reshape(self.q_val, [2, self.flag.mov_num * 2 + 1])
 
+        # Yelly comment: tf.concat(values, axis) - concat along the specific axis. Axis=-1 means the last axis
         self.q_p    = tf.concat([tf.nn.softmax(self.logits[:,:self.flag.mov_num]), tf.nn.softmax(self.logits[:,self.flag.mov_num:self.flag.mov_num*2]), tf.sigmoid(self.logits[:,-1:])], -1)

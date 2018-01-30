@@ -52,6 +52,7 @@ def draw_pos(pos_1, pos_2, raw_map_img):
     map_img = raw_map_img.copy()
     # red
     map_img = draw_pos_tool(pos_1[0][:2], np.array([255, 0, 0],dtype=np.float32), map_img)
+    # Yelly comment: why use element 2,3 here rather than 0,1 as above?    
     map_img = draw_pos_tool(pos_1[1][2:], np.array([255, 0, 0],dtype=np.float32), map_img)
     # blue
     map_img = draw_pos_tool(pos_2[0][:2], np.array([0, 255, 0],dtype=np.float32), map_img)
@@ -61,6 +62,7 @@ def draw_pos(pos_1, pos_2, raw_map_img):
 def _move_tool(pos_pre, dir, map_img):
     flag = False
     pos_new = [pos_pre[0]+dir[0], pos_pre[1]+dir[1]]
+    # Yelly comment: if take rotation into consideration, should not only consider corners when detecting bars
     corners = [[pos_new[0]+d_size[0], pos_new[1]+d_size[1]], [pos_new[0]+d_size[0], pos_new[1]-d_size[1]], [pos_new[0]-d_size[0], pos_new[1]+d_size[1]], [pos_new[0]-d_size[0], pos_new[1]-d_size[1]]]
     for corner in corners:
         if sum(map_img[corner[0], corner[1]])<765:
@@ -109,10 +111,11 @@ def move(pos_pre, dir, map_img):
     print 'dir_new',dir
     return dir
 
+# Yelly comment: need much modifications on this function!
 def shoot(pos, target, state_1, state_2, map_img):
     flag = False
     dx   = int(robot_size[0]/10)
-    dy   = int(robot_size[0]/10)
+    dy   = int(robot_size[0]/10) # Yelly comment: should be robot_size[1]/10 ?
     targets = [[target[0]+dx, target[1]+dy], [target[0]+dx, target[1]-dy], [target[0]-dx, target[1]+dy], [target[0]-dx, target[1]-dy]]
     for tar in targets:
         for tmp_x in range(pos[0], tar[0]):
@@ -123,6 +126,7 @@ def shoot(pos, target, state_1, state_2, map_img):
     state_2['shooted'] = True
     return True, state_1, state_2
 
+# Yelly comment: [TODO] action selection (according to policy) should be put into agent logic
 def get_action(act, policy='MAX'):
     if policy=='MAX':
         return [act_dict[act[0]], act_dict[act[1]], act[-1]]
@@ -139,6 +143,8 @@ def get_state(info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
 
 
     # move:[dx,dy]
+    # Yelly comment: with outbound detection and bar detection, but does not prevent robots 
+    # (either friends or opponents) from colliding into each other
     dir_tmp = move(info_1[0][:2], act_1[0][:2], raw_map_img)
     state_1.append({'x':info_1[0][0], 'y':info_1[0][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
     dir_tmp = move(info_1[1][:2], act_1[1][:2], raw_map_img)
@@ -260,6 +266,7 @@ def environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
 
     # pos+pre
+    # [TODO]this is for collide detection
     map_img = draw_pos(info_1, info_2, raw_map_img)
 
     # state and reward

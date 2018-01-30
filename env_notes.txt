@@ -1,0 +1,40 @@
+what to consider (further):
+1. rotation[have to consider, because shoooting gun could only aim at 180 degrees forward]
+2. hit rate ()
+3. speed (it might affect hit rate?)
+4. 'shooted' might be represented as integers as speed of bullets should be much higher than that of robots.
+
+INFO:
+* projectile frequency limit: 10Hz
+* projectile speed limit: 20m/s 
+* initial HP for each robot: 2000
+* [VERIFICATION NEEDED] size of robots: 0.5m*0.5m
+* [VERIFICATION NEEDED] size of bonus detecting module: 0.1m*0.1m 
+* size of bonus area: 0.5m*0.5m
+* challenge round: 180s
+* max number of projectile: 200
+* each projectile hit reduces 50HP. 
+* when bonus detecting module reside in bonus area for 5s, projectile hit from all team robots reduces 75HP
+* score calculation: Score = a*X + b*Y + c*Z.
+	a = 6.0/( 4.0 + ROBOT_NUM)
+	b = 75.0/( 4.0 + ROBOT_NUM)
+	c = 2.0/( 1.0 + ROBOT_NUM)
+	X: HP reduction of AI robots
+	Y: remaining time (in seconds) when both AI robots are destroyed (or 0 if not destroyed)
+	Z: HP reduction of team robots
+
+for environment:
+1. [HIGH] Collision detection.
+	Once collision detected, give the agent negative reward.
+	The reward is almost unbearable in the case of colliding into the wall (including outbound wall).
+	When collide into other robots (either friend or opponent), the reward is given according to real-world consequences.i
+2. [HIGH] buff rewarding
+3. [HIGH] explore the equation of reward relating to HP and moving. 
+	// below commentted out if the case is considered in end case...
+	//Special reward needed for winning the game by shooting all AI robots to 0,
+	//as well as losing the game as self HP to 0.
+4. [MEDIUM] rotation consideration
+5. [LOW] compute the real location after action is taken (I wonder if the robot can actually move to exact place as the action persumes)
+6. [LOW] corner cases specifing, including collision.
+7. [LOW] hit rate consideration
+8. [LOW] calculate the time since shooting action decided till the first projectile hit armor module (might have to take whether last action is shooting into consideration). Compute frequency function.

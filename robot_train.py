@@ -11,9 +11,8 @@ import pdb
 
 pygame.init()
 screen = pygame.display.set_mode((800, 500), 0, 32)
-raw_map_img, bars = create_raw_map_img()
 flag = config()
-draw_init(screen, bars)
+draw_init(screen) # Yelly deleted the parameter 'bars' as robot_client has this variable already
 
 # model
 with tf.variable_scope('cnn_1') as scope:
@@ -51,13 +50,15 @@ for global_step in range(flag.steps):
     act_1_p, act_2_p = sess.run([cnn_1.q_p, cnn_2.q_p], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img})
 
     # environ and optimize
+# Yelly modification: delete the 'raw_map_img' parameter passed to agent()
     if global_step%10==0:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, policy='MAX')
     else:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, policy='RANDOM')
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 
     print 'Itr_%d loss: %0.3f'%(global_step, l)
 
-    draw_state(screen, bars, info_1, info_2)
+    # Yelly deleted the parameter 'bars' as robot_client has this variable already
+    draw_state(screen, info_1, info_2)

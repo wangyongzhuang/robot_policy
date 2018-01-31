@@ -42,13 +42,17 @@ def create_raw_map_img():
 
     return img, bars
 
+# Yelly modification: make these invariables global variables and 
+# eliminating all these parameters to functions in this file
+raw_map_img, bars = create_raw_map_img()
+
 def draw_pos_tool(pos, color, map_img):
     for i in range(pos[0]-d_size[0], pos[0]+d_size[0]):
         for j in range(pos[1]-d_size[1], pos[1]+d_size[1]):
             map_img[i,j] = color
     return map_img
 
-def draw_pos(pos_1, pos_2, raw_map_img):
+def draw_pos(pos_1, pos_2):
     map_img = raw_map_img.copy()
     # red
     map_img = draw_pos_tool(pos_1[0][:2], np.array([255, 0, 0],dtype=np.float32), map_img)
@@ -59,59 +63,178 @@ def draw_pos(pos_1, pos_2, raw_map_img):
     map_img = draw_pos_tool(pos_2[1][2:], np.array([0, 255, 0],dtype=np.float32), map_img)
     return map_img
 
-def _move_tool(pos_pre, dir, map_img):
+def _move_tool(pos_pre, dir):
     flag = False
     pos_new = [pos_pre[0]+dir[0], pos_pre[1]+dir[1]]
     # Yelly comment: if take rotation into consideration, should not only consider corners when detecting bars
     corners = [[pos_new[0]+d_size[0], pos_new[1]+d_size[1]], [pos_new[0]+d_size[0], pos_new[1]-d_size[1]], [pos_new[0]-d_size[0], pos_new[1]+d_size[1]], [pos_new[0]-d_size[0], pos_new[1]-d_size[1]]]
     for corner in corners:
-        if sum(map_img[corner[0], corner[1]])<765:
+        # Yelly modification: use specific functions for robot collision detection,
+        # change 765 to 255 (bars are represented in [0,0,0])
+        print '_move_tool, corner:', corner, 'raw_map_img[corner[0], corner[1]]:', raw_map_img[corner[0], corner[1]]
+        if sum(raw_map_img[corner[0], corner[1]])<255:
             return flag
     return True
 
-def move(pos_pre, dir, map_img):
+# Yelly addition: this function should be called after move_detect_wall_collide() function,
+# that is, (after dir adjustment) movement of robots should not collide into walls.
+# move_detect_robot_collide:
+# return: collide, adjusted_dir_1, adjusted_dir_2
+# if no collision, return previous dirs.
+# otherwise return dirs before collision happens
+def move_detect_robot_collide(pos_pre_1, pos_pre_2, dir_1, dir_2):
+    dir_1_new = dir_1
+    dir_2_new = dir_2
+    
+    safety_dist_x = robot_size[0]
+    safety_dist_y = robot_size[1]
+
+    #collide = True
+
+    # possible collide only if the shortest distance (on both X and Y axis) 
+    # between points on the two traces is smaller than safety distance
+    
+    dist_x_pre = abs(pos_pre_2[0] - pos_pre_1[0])
+    if (dist_x_pre < safety_dist_x):
+        # x distance smaller than safety distance even before movement    
+        # no need to change dir[0] here because collision must be caused by Y axis movement
+        #collide = True
+        pass
+    else:
+        pos_12_x_sign = _sign(pos_pre_2[0] - pos_pre_1[0])
+        dir_1_x_sign = _sign(dir_1[0])
+        dir_2_x_sign = _sign(dir_2[0])
+
+        if not dir_1_x_sign == pos_12_x_sign:
+            if dir_2_x_sign == pos_12_x_sign:
+                # robots move away from each other
+                #collide = False
+                return False, dir_1, dir_2
+            elif abs(dir_2[0]) > dist_x_pre - safety_dist_x:
+                # robot_2 moves towards robot_1
+                #collide = True
+                dir_2_new[0] = _sign(dir_2[0]) * (dist_x_pre - safety_dist_x)
+            else:
+                # robot_2 moves towards robot_1
+                #collide = False
+                return False, dir_1, dir_2
+        else:
+            if dir_2_x_sign == pos_12_x_sign:
+                # robot_1 moves towards robot_2, robot_2 move away from robot_1
+                if abs(dir_1[0]) > dist_x_pre - safety_dist_x:
+                    #collide = True
+                    dir_1_new[0] = _sign(dir_1[0]) * (dist_x_pre - safety_dist_x)
+                else:
+                    #collide = False
+                    return False, dir_1, dir_2
+            elif abs(dir_1[0] - dir_2[0]) > dist_x_pre - safety_dist_x:
+                # robots move towards each other
+                #collide = True
+                # let the robots come at a equal distance to the middle of there x position
+                x_mid = (pos_pre_1[0] + pos_pre_2[0])/2
+                dir_1_new[0] = _sign(dir_1[0]) * (abs(x_mid - pos_pre_1[0]) - safety_dist_x)
+                dir_2_new[0] = _sign(dir_2[0]) * (abs(x_mid - pos_pre_2[0]) - safety_dist_x)
+            else:
+                # robots move towards each other
+                #collide = False
+                return False, dir_1, dir_2
+
+    # That the function does not return before here, 
+    # suggests that collision is possible with regard to X axis
+    
+    # examine on Y axis below,
+    # if collision is also possible with regard to Y axis
+    # then collision is reported
+    dist_y_pre = abs(pos_pre_2[1] - pos_pre_1[1])
+    if (dist_y_pre < safety_dist_y):
+        # y distance smaller than safety distance even before movement    
+        # no need to change dir[1] here because collision must be caused by X axis movement
+        #collide = True
+        return True, dir_1_new, dir_2_new
+    else:
+        pos_12_y_sign = _sign(pos_pre_2[1] - pos_pre_1[1])
+        dir_1_y_sign = _sign(dir_1[1])
+        dir_2_y_sign = _sign(dir_2[1])
+
+        if not dir_1_y_sign == pos_12_y_sign:
+            if dir_2_y_sign == pos_12_y_sign:
+                # robots move away from each other
+                #collide = False
+                return False, dir_1, dir_2
+            elif abs(dir_2[1]) > dist_y_pre - safety_dist_y:
+                # robot_2 moves towards robot_1
+                #collide = True
+                dir_2_new[1] = _sign(dir_2[1]) * (dist_y_pre - safety_dist_y)
+                return True, dir_1_new, dir_2_new
+            else:
+                # robot_2 moves towards robot_1
+                #collide = False
+                return False, dir_1, dir_2
+        else:
+            if dir_2_y_sign == pos_12_y_sign:
+                # robot_1 moves towards robot_2, robot_2 move away from robot_1
+                if abs(dir_1[1]) > dist_y_pre - safety_dist_y:
+                    #collide = True
+                    dir_1_new[1] = _sign(dir_1[1]) * (dist_y_pre - safety_dist_y)
+                    return True, dir_1_new, dir_2_new
+                else:
+                    #collide = False
+                    return False, dir_1, dir_2
+            elif abs(dir_1[1] - dir_2[1]) > dist_y_pre - safety_dist_y:
+                # robots move towards each other
+                #collide = True
+                # let the robots come at a equal distance to the middle of there y position
+                y_mid = (pos_pre_1[1] + pos_pre_2[1])/2
+                dir_1_new[1] = _sign(dir_1[1]) * (abs(y_mid - pos_pre_1[1]) - safety_dist_y/2)
+                dir_2_new[1] = _sign(dir_2[1]) * (abs(y_mid - pos_pre_2[1]) - safety_dist_y/2)
+                return True, dir_1_new, dir_2_new
+            else:
+                # robots move towards each other
+                #collide = False
+                return False, dir_1, dir_2
+
+    print '[ERROR]move_detect_robot_collide function has unhandled case!'
+    return False, dir_1, dir_2
+
+# Yelly comment: previously dir_new unused. Yelly modified this
+def move_detect_wall_collide(pos_pre, dir):
+ 
     dir_new = dir
 
+    # Yelly modification: change dir to the point before collide (with outbound or bars),
+    # rather than use while loop
+
     # out
-    while (pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0])) < 0 or (pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]))>=int(scale*8000):
-        if dir[0]==0:
-            break
-        dir[0] = _sign(dir[0]) * (abs(dir[0]) -1)
-    while (pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])) < 0 or (pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1]))>=int(scale*5000):
-        if dir[1]==0:
-            break
-        dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
+    if (pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0])) < 0:
+        dir_new[0] = d_size[0] - pos_pre[0] # negative
+    elif (pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]))>=int(scale*8000):
+        # notice: biggest index is N-1
+        dir_new[0] = (int(scale*8000)-1) - d_size[0] - pos_pre[0] # positive
+    
+    if (pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])) < 0:
+        dir_new[1] = d_size[1] - pos_pre[1] # negative
+    elif (pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1]))>=int(scale*5000):
+        # notice: biggest index is N-1
+        dir_new[1] = (int(scale*5000)-1) - d_size[1] - pos_pre[1] # positive
 
     # bar
-    print 'move to:', [pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])],
+    print 'move to:', [pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])],
 
-    print sum(map_img[pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]]), sum(map_img[pos_pre[0], pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])])
-    print 'dir',dir,
-    while not _move_tool(pos_pre, [dir[0], 0], map_img):
-        if dir[0]==0:
+    #print sum(raw_map_img[pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]]), sum(raw_map_img[pos_pre[0], pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])])
+    print 'dir_inside_bound',dir_new,
+    while not _move_tool(pos_pre, [dir_new[0], 0]):
+        if dir_new[0]==0:
             break
-        dir[0] = _sign(dir[0]) * (abs(dir[0]) -1)
-    while not _move_tool(pos_pre, [0, dir[1]], map_img):
+        dir_new[0] = _sign(dir_new[0]) * (abs(dir_new[0]) -1)
+    while not _move_tool(pos_pre, [0, dir_new[1]]):
         #pdb.set_trace()
-        if dir[1]==0:
+        if dir_new[1]==0:
             break
-        dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
-    '''
-    while sum(map_img[pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]])<765:
-        pdb.set_trace()
-        if dir[0]==0:
-            break
-        dir[0] = _sign(dir[0]) * (abs(dir[0]) -1)
-    while sum(map_img[pos_pre[0], pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])])<765:
-        pdb.set_trace()
-        if dir[1]==0:
-            break
-        dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
-    '''
-    print 'dir_new',dir
+        dir_new[1] = _sign(dir_new[1]) * (abs(dir_new[1]) -1)
+    print 'dir_new',dir_new
     return dir
 
-# Yelly comment: need much modifications on this function!
+# Yelly comment: [TODO]need much modifications on this function!
 def shoot(pos, target, state_1, state_2, map_img):
     flag = False
     dx   = int(robot_size[0]/10)
@@ -134,7 +257,7 @@ def get_action(act, policy='MAX'):
     return [act_dict[0], act_dict[0], act_dict[random.randint(0,1)]]
 
 
-def get_state(info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
+def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     # get state[x,y,dx,dy,shoot,hit,shooted]
     state_1 = []
     state_2 = []
@@ -143,18 +266,76 @@ def get_state(info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
 
 
     # move:[dx,dy]
-    # Yelly comment: with outbound detection and bar detection, but does not prevent robots 
-    # (either friends or opponents) from colliding into each other
-    dir_tmp = move(info_1[0][:2], act_1[0][:2], raw_map_img)
+    # Yelly comment: divide collision cases into three clases:
+    # 1. [WallCollide] team robot collide into bar/fence
+    # 2. [TeamCollide] team robot collide into each other
+    # 3. [AICollide] team robot collide into AI robot
+    # For all these collisions, the actions take the robots to the point before collision
+    # if dir_tmp different from act, suggesting collision detected
+    
+    # WallCollide
+    dir_tmp = move_detect_wall_collide(info_1[0][:2], act_1[0][:2])
     state_1.append({'x':info_1[0][0], 'y':info_1[0][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
-    dir_tmp = move(info_1[1][:2], act_1[1][:2], raw_map_img)
+    if ( not dir_tmp[0] == act_1[0][0] or not dir_tmp[1] == act_1[0][1]):
+        print 'robot 0 of team 1 collide detected',
+        print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[0][0]='+str(act_1[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[0][1]='+str(act_1[0][1])
+        state_1[0]['WallCollide'] = True
+    else:
+        state_1[0]['WallCollide'] = False
+    dir_tmp = move_detect_wall_collide(info_1[1][:2], act_1[1][:2])
     state_1.append({'x':info_1[1][0], 'y':info_1[1][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
+    if ( not dir_tmp[0] == act_1[1][0] or not dir_tmp[1] == act_1[1][1]):
+        print 'robot 1 of team 1 collide detected',
+        print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[1][0]='+str(act_1[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[1][1]='+str(act_1[1][1])
+        state_1[1]['WallCollide'] = True
+    else:
+        state_1[1]['WallCollide'] = False
 
-    dir_tmp = move(info_2[0][:2], act_2[0][:2], raw_map_img)
+    dir_tmp = move_detect_wall_collide(info_2[0][:2], act_2[0][:2])
     state_2.append({'x':info_2[0][0], 'y':info_2[0][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
-    dir_tmp = move(info_2[1][:2], act_2[1][:2], raw_map_img)
+    if ( not dir_tmp[0] == act_2[0][0] or not dir_tmp[1] == act_2[0][1]):
+        print 'robot 0 of team 2 collide detected',
+        print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[0][0]='+str(act_2[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[0][1]='+str(act_2[0][1])
+        state_2[0]['WallCollide'] = True
+    else:
+        state_2[0]['WallCollide'] = False
+    dir_tmp = move_detect_wall_collide(info_2[1][:2], act_2[1][:2])
     state_2.append({'x':info_2[1][0], 'y':info_2[1][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
+    if ( not dir_tmp[0] == act_2[1][0] or not dir_tmp[1] == act_2[1][1]):
+        print 'robot 1 of team 2 collide detected',
+        print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[1][0]='+str(act_2[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[1][1]='+str(act_2[1][1])
+        state_2[1]['WallCollide'] = True
+    else:
+        state_2[1]['WallCollide'] = False
 
+    # TeamCollide
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_1[1][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_1[1]['dx'], state_1[1]['dy']])
+    if (collide):
+        print 'team 1 robots (prev pos = ', [info_1[0][0], info_1[0][1]], [info_1[1][0], info_1[1][1]], ') collide with each other, change dir from ',
+        print [state_1[0]['dx'], state_1[0]['dy']], [state_1[1]['dx'], state_1[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_1[0]['TeamCollide'] = True
+        state_1[1]['TeamCollide'] = True
+        state_1[0]['dx'] = dir_tmp_1[0]
+        state_1[0]['dy'] = dir_tmp_1[1]
+        state_1[1]['dx'] = dir_tmp_2[0]
+        state_1[1]['dy'] = dir_tmp_2[1]
+    else:
+        state_1[0]['TeamCollide'] = False
+        state_1[1]['TeamCollide'] = False
+
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_2[0][:2], info_2[1][:2], [state_2[0]['dx'], state_2[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
+    if (collide):
+        print 'team 2 robots (prev pos = ', [info_2[0][0], info_2[0][1]], [info_2[1][0], info_2[1][1]], ') collide with each other, change dir from ',
+        print [state_2[0]['dx'], state_2[0]['dy']], [[state_2[1]['dx']], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_2[0]['TeamCollide'] = True
+        state_2[1]['TeamCollide'] = True
+        state_2[0]['dx'] = dir_tmp_1[0]
+        state_2[0]['dy'] = dir_tmp_1[1]
+        state_2[1]['dx'] = dir_tmp_2[0]
+        state_2[1]['dy'] = dir_tmp_2[1]
+    else:
+        state_2[0]['TeamCollide'] = False
+        state_2[1]['TeamCollide'] = False
 
     # shoot init
     if act_1[0][-1]:
@@ -183,7 +364,11 @@ def get_state(info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
     state_2[1]['hit']      = False
     state_2[1]['shooted']  = False
     
-
+    # Yelly comment: 
+    # [TODO] parameter 'map_img' passed to shoot() function should not be raw_map_img
+    # but the map_img reflecting robots,
+    # However as shoot() function will be modified further,
+    # now I just pass raw_map_img to shoot() function (as is did by Yongzhuang)
     # hit or shooted
     if state_1[0]['shoot']:
         shoot(info_1[0][:2], info_2[0][:2], state_1[0], state_2[0], raw_map_img)
@@ -216,9 +401,9 @@ def _get_reward(state):
         state['reward'] += -10.
     return state
 
-def get_reward(info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
+def get_reward(info_1, info_2, act_1, act_2, policy='MAX'):
     # init
-    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, raw_map_img, policy=policy)
+    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, policy=policy)
     reward_1 = np.zeros([2,15])
     reward_2 = np.zeros([2,15])
 
@@ -256,21 +441,20 @@ def get_new_info(info_pre, state):
 def get_init():
     info_1 = [[30, 420, 100, 0],  [30, 470, 100, 0]]
     info_2 = [[770, 420, 100,0 ], [770, 470, 100, 0]]
-    raw_map_img, _ = create_raw_map_img()
 
-    map_img_new = draw_pos(info_1, info_2, raw_map_img)
+    map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
+def environ(flag, info_1, info_2, act_1, act_2, policy='MAX'):
     # info[2,4]: [x,y,blood,buff]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
 
     # pos+pre
     # [TODO]this is for collide detection
-    map_img = draw_pos(info_1, info_2, raw_map_img)
+    map_img = draw_pos(info_1, info_2)
 
     # state and reward
-    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, raw_map_img, policy=policy)
+    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, policy=policy)
     #pdb.set_trace()
 
     print '\nstate:'
@@ -281,7 +465,7 @@ def environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
     info_1_new = [get_new_info(info_1[0], state_1[0]), get_new_info(info_1[1], state_1[1])]
     info_2_new = [get_new_info(info_2[0], state_2[0]), get_new_info(info_2[1], state_2[1])]
 
-    map_img_new = draw_pos(info_1_new, info_2_new, raw_map_img)
+    map_img_new = draw_pos(info_1_new, info_2_new)
 
 
     return info_1_new, info_2_new, reward_1, reward_2, map_img_new

@@ -525,6 +525,19 @@ def _get_reward(state):
 
     if state['shooted']:
         state['reward'] += -10.
+
+    # Yelly addition:
+    # collision
+    #wall_collide_reward = -15 # configurable, Yelly make it no less than the max move reward I may get
+    #team_collide_reward = -10 # configurable, Yelly make it a little less than wall_collide_reward
+    #ai_collide_reward = 0 # configurable, Yelly set it 0 here, because there's no obvious damage caused by run into opponent (I heard that our robots will be even stronger than DJI robots). However, if the distance is too small hit rate might decrease.
+    if state['WallCollide']:
+        state['reward'] += -15.
+    if state['TeamCollide']:
+        state['reward'] += -10.
+    #if state['AICollide']:
+    #    state['reward'] += 0.
+
     return state
 
 def get_reward(info_1, info_2, act_1, act_2, policy='MAX'):

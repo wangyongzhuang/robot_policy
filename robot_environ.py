@@ -333,24 +333,34 @@ def shoot(pos, target, state_1, state_2, map_img):
     return True, state_1, state_2
 
 # Yelly comment: [TODO] action selection (according to policy) should be put into agent logic
-def get_action(act, hp, policy='MAX'):
+def get_action(act, hp, proj_num, policy='MAX'):
     # prevent dead robots from action
     if hp <= 0:
         return [0, 0, 0]
 
     if policy=='MAX':
-        return [act_dict[act[0]], act_dict[act[1]], act[-1]]
+        if proj_num > 0:
+            return [act_dict[act[0]], act_dict[act[1]], act[-1]]
+        else:
+            return [act_dict[act[0]], act_dict[act[1]], 0]
     #return [act_dict[random.randint(0,6)], act_dict[random.randint(0,6)], act_dict[random.randint(0,1)]]
-    return [act_dict[0], act_dict[0], act_dict[random.randint(0,1)]]
+    if proj_num > 0:
+        # Yelly modification: value of act[-1] should be 0 or 1
+        #return [act_dict[0], act_dict[0], act_dict[random.randint(0,1)]]
+        return [act_dict[0], act_dict[0], random.randint(0,1)]
+    else:
+        return [act_dict[0], act_dict[0], 0]
 
 
 def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     # get state[x,y,dx,dy,shoot,hit,shooted,WallCollide,TeamCollide,AICollide]
     state_1 = []
     state_2 = []
-    # Yelly modification: pass hp info to get_action function to prevent dead robots from action
-    act_1 = [get_action(act_1[0], info_1[0][2], policy=policy), get_action(act_1[1], info_1[1][2], policy=policy)]
-    act_2 = [get_action(act_2[0], info_2[0][2], policy=policy), get_action(act_2[1], info_2[1][2], policy=policy)]
+    # Yelly modification: 
+    # 1. pass hp info to get_action function to prevent dead robots from action
+    # 2. pass projectile cnt to get_action function to prevent robot with no projectile from shooting
+    act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4], policy=policy), get_action(act_1[1], info_1[1][2], info_1[1][4], policy=policy)]
+    act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4], policy=policy), get_action(act_2[1], info_2[1][2], info_2[1][4], policy=policy)]
 
 
     # move:[dx,dy]
@@ -652,6 +662,11 @@ def get_new_info(info_pre, state):
 
         if info_pre[0][2] < 0:
             info_pre[0][2] = 0      
+    # Yelly addition: projectile number update
+    # max shooting frequency is 10Hz, time slice is 0.1s,
+    # thus on average 1 projectile is shooted in each step
+    if state[0]['shoot']:
+        info_pre[0][4] -= 1
 
     # robot 1 info[:3]
     info_pre[1][0] += state[1]['dx']
@@ -664,6 +679,8 @@ def get_new_info(info_pre, state):
 
         if info_pre[0][2] < 0:
             info_pre[0][2] = 0      
+    if state[1]['shoot']:
+        info_pre[1][4] -= 1
    
     # Yelly addition:
     # bonus 
@@ -697,18 +714,19 @@ def get_init():
     # 	add buff value one by one until it achieves bonus_step (5/0.1),
     # 	which indicate that bonus got
     # 2. change initial HP value to 2000
-    #info_1 = [[30, 420, 2000, -1],  [30, 470, 2000, -1]]
-    #info_2 = [[770, 420, 2000, -1], [770, 470, 2000, -1]]
+    # 3. added projectile info: initial projectile number: 200 for each roobt
+    #info_1 = [[30, 420, 2000, -1, 200],  [30, 470, 2000, -1, 200]]
+    #info_2 = [[770, 420, 2000, -1, 200], [770, 470, 2000, -1, 200]]
 
     # Yelly test
-    info_1 = [[375, 225, 2000, -1],  [375, 280, 2000, -1]]
-    info_2 = [[425, 225, 2000, -1], [425, 280, 2000, -1]]
+    info_1 = [[375, 225, 2000, -1, 200],  [375, 280, 2000, -1, 200]]
+    info_2 = [[425, 225, 2000, -1, 200], [425, 280, 2000, -1, 200]]
 
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
 def environ(flag, info_1, info_2, act_1, act_2, policy='MAX'):
-    # info[2,4]: [x,y,blood,buff]
+    # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
 
     # state and reward
@@ -720,20 +738,20 @@ def environ(flag, info_1, info_2, act_1, act_2, policy='MAX'):
     print state_2
 
     # new info and map
-# Yelly modification:
-# let get_new_info() function compute for two robots at a time
-# because buff value is correlated for two team robots
-# i.e. if any one of the team robots gets bonus, the two robots of the team should all get bonus
-# and info[3] value of the two robots should all be 5/0.1
-#
-# [TODO] Yelly raises a quesion here:
-# If AI robots cannot get bonus at all,
-# then the HP drop for one hit on team robot and AI robot could be different,
-# so for AI robot it is meaningless to reside in bonus zone for 5s.
-# This makes the two neural networks asymmetric.
-# Possible solutions include:
-# 1. do some tricks in reward computing of each side
-# 2. Allow asymmetric, i.e. train only one nn as team robot while the other as AI robot
+    # Yelly modification:
+    # let get_new_info() function compute for two robots at a time
+    # because buff value is correlated for two team robots
+    # i.e. if any one of the team robots gets bonus, the two robots of the team should all get bonus
+    # and info[3] value of the two robots should all be 5/0.1
+    #
+    # [TODO] Yelly raises a quesion here:
+    # If AI robots cannot get bonus at all,
+    # then the HP drop for one hit on team robot and AI robot could be different,
+    # so for AI robot it is meaningless to reside in bonus zone for 5s.
+    # This makes the two neural networks asymmetric.
+    # Possible solutions include:
+    # 1. do some tricks in reward computing of each side
+    # 2. Allow asymmetric, i.e. train only one nn as team robot while the other as AI robot
     info_1_new = get_new_info(info_1, state_1)
     info_2_new = get_new_info(info_2, state_2)
 

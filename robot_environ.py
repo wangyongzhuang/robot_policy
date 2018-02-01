@@ -526,18 +526,24 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
 
     return state_1, state_2
 
-def _get_reward(state):
+def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt):
     # move
     state['reward'] = 3 + np.sqrt((state['x']+state['dx']-4000*scale)**2 + (state['y']+state['dy']-2500*scale)**2) - np.sqrt((state['x']-4000*scale)**2 + (state['y']-2500*scale)**2)
 
     # shoot, hit or shooted
     if state['hit']:
-        state['reward'] += 10.
+        if my_bonus_cnt == bonus_steps:
+            state['reward'] += 15. 
+        else:
+            state['reward'] += 10.
     elif state['shoot'] and not state['hit']:
         state['reward'] += -1.
 
     if state['shooted']:
-        state['reward'] += -10.
+        if oppo_bonus_cnt == bonus_steps:
+            state['reward'] += -15. 
+        else:
+            state['reward'] += -10.
 
     # Yelly addition:
     # collision
@@ -560,8 +566,8 @@ def get_reward(info_1, info_2, act_1, act_2, policy='MAX'):
     reward_2 = np.zeros([2,15])
 
     # reward
-    state_1 = [_get_reward(state_1[0]), _get_reward(state_1[1])]
-    state_2 = [_get_reward(state_2[0]), _get_reward(state_2[1])]
+    state_1 = [_get_reward(state_1[0], info_1[0][3], info_2[0][3]), _get_reward(state_1[1], info_1[0][3], info_2[0][3])]
+    state_2 = [_get_reward(state_2[0], info_2[0][3], info_1[0][3]), _get_reward(state_2[1], info_2[0][3], info_1[0][3])]
 
     reward_1[0,act_1[0][0]] = state_1[0]['reward']
     reward_1[0,act_1[0][1]+7] = state_1[0]['reward']

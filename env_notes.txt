@@ -36,6 +36,7 @@ for environment:
 	//Special reward needed for winning the game by shooting all AI robots to 0,
 	//as well as losing the game as self HP to 0.
 4. [MEDIUM] rotation consideration
+5. [MEDIUM] consider the case in which one of the two robots die
 5. [LOW] compute the real location after action is taken (I wonder if the robot can actually move to exact place as the action persumes)
 6. [LOW] corner cases specifing, including collision.
 7. [LOW] hit rate consideration

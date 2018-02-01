@@ -45,6 +45,7 @@ def create_raw_map_img():
 # Yelly modification: make these invariables global variables and 
 # eliminating all these parameters to functions in this file
 raw_map_img, bars = create_raw_map_img()
+print 'in robot_environ.py, raw_amp_img initilized'
 
 def draw_pos_tool(pos, color, map_img):
     for i in range(pos[0]-d_size[0], pos[0]+d_size[0]):
@@ -63,18 +64,91 @@ def draw_pos(pos_1, pos_2):
     map_img = draw_pos_tool(pos_2[1][2:], np.array([0, 255, 0],dtype=np.float32), map_img)
     return map_img
 
+# Yelly modification:
+# use global variable 'bars' to detect collision with each bar, return dir_new
+# notice that a robot could collide into one bar at most,
+# so the function could safely return once collision with a bar detected
+
+# I abandoned previous method of bar collision detection because:
+# 1. without specific information of bar, caller of this function (i.e. move_detect_wall_collide function) 
+#    has to employ while loop to decide dir_new, causing great overhead
+# 2. if only use sampled points to detect collision,
+#    the quantity of the sampled points should be something large and hard to decide (corners only is definitely not enough)
+#    and to cover possible collision during movement, at least three states should be checked(final_pos, move_x_only, move_y_only)
 def _move_tool(pos_pre, dir):
-    flag = False
-    pos_new = [pos_pre[0]+dir[0], pos_pre[1]+dir[1]]
-    # Yelly comment: if take rotation into consideration, should not only consider corners when detecting bars
-    corners = [[pos_new[0]+d_size[0], pos_new[1]+d_size[1]], [pos_new[0]+d_size[0], pos_new[1]-d_size[1]], [pos_new[0]-d_size[0], pos_new[1]+d_size[1]], [pos_new[0]-d_size[0], pos_new[1]-d_size[1]]]
-    for corner in corners:
-        # Yelly modification: use specific functions for robot collision detection,
-        # change 765 to 255 (bars are represented in [0,0,0])
-        print '_move_tool, corner:', corner, 'raw_map_img[corner[0], corner[1]]:', raw_map_img[corner[0], corner[1]]
-        if sum(raw_map_img[corner[0], corner[1]])<255:
-            return flag
-    return True
+    # return dir_new only when collision is confirmed,
+    # and that would be inside the loop
+    # Yelly declares this variable here just to save per-iteration assignment
+    dir_new = dir
+
+    robot_x_min = pos_pre[0] - d_size[0]
+    robot_x_max = pos_pre[0] + d_size[0]
+    robot_y_min = pos_pre[1] - d_size[1]
+    robot_y_max = pos_pre[1] + d_size[1]
+    for i in range(len(bars)):
+        # per-iteration initialization can be saved if dir_new is properly assigned
+        # for real collision        
+        #dir_new = dir # re-initialize dir_new at every iteration
+        
+        # first ensure collision is possible on X axis
+        if robot_x_min <= bars[i][0]:
+            if robot_x_max > bars[i][0]:
+                # collide possible on X axis even without movement
+                # if collide, should only adjust movement on Y axis
+                dir_new[0] = dir[0]
+                pass
+            elif robot_x_max + dir[0] > bars[i][0]:
+                # collide possible on X axis after movement
+                dir_new[0] = bars[i][0] - robot_x_max
+            else:
+                # collide impossible on X axis
+                continue
+                
+        elif robot_x_min < bars[i][0] + bars[i][2]:
+            # collide possible on X axis even without movement
+            # if collide, should only adjust movement on Y axis
+            dir_new[0] = dir[0]
+            pass
+        elif robot_x_min + dir[0] < bars[i][0] + bars[i][2]:
+            # collide possible on X axis after movement
+            dir_new[0] = bars[i][0] + bars[i][2] - robot_x_min
+        else:
+            # collide impossible on X axis
+            continue
+
+        # if collision is possible on X axis, check Y axis
+        # if collision is also possible on Y axis, 
+        # it's safe to directly return dir_new        
+        if robot_y_min <= bars[i][1]:
+            if robot_y_max > bars[i][1]:
+                # collide possible on Y axis even without movement
+                # if collide, should only adjust movement on X axis
+                dir_new[1] = dir[1]
+                return dir_new
+            elif robot_y_max + dir[1] > bars[i][1]:
+                # collide possible on Y axis after movement
+                dir_new[1] = bars[i][1] - robot_y_max
+                return dir_new
+            else:
+                # collide impossible on Y axis
+                continue
+                
+        elif robot_y_min < bars[i][1] + bars[i][3]:
+            # collide possible on Y axis even without movement
+            # if collide, should only adjust movement on X axis
+            dir_new[1] = dir[1]
+            return dir_new
+        elif robot_y_min + dir[1] < bars[i][1] + bars[i][3]:
+            # collide possible on Y axis after movement
+            dir_new[1] = bars[i][1] + bars[i][3] - robot_y_min
+            return dir_new
+        else:
+            # collide impossible on Y axis
+            continue
+
+    # no collision detected if function dose not return inside the loop
+    return dir
+
 
 # Yelly addition: this function should be called after move_detect_wall_collide() function,
 # that is, (after dir adjustment) movement of robots should not collide into walls.
@@ -132,8 +206,8 @@ def move_detect_robot_collide(pos_pre_1, pos_pre_2, dir_1, dir_2):
                 #collide = True
                 # let the robots come at a equal distance to the middle of there x position
                 x_mid = (pos_pre_1[0] + pos_pre_2[0])/2
-                dir_1_new[0] = _sign(dir_1[0]) * (abs(x_mid - pos_pre_1[0]) - safety_dist_x)
-                dir_2_new[0] = _sign(dir_2[0]) * (abs(x_mid - pos_pre_2[0]) - safety_dist_x)
+                dir_1_new[0] = _sign(dir_1[0]) * (abs(x_mid - pos_pre_1[0]) - safety_dist_x/2)
+                dir_2_new[0] = _sign(dir_2[0]) * (abs(x_mid - pos_pre_2[0]) - safety_dist_x/2)
             else:
                 # robots move towards each other
                 #collide = False
@@ -222,15 +296,10 @@ def move_detect_wall_collide(pos_pre, dir):
 
     #print sum(raw_map_img[pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]]), sum(raw_map_img[pos_pre[0], pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])])
     print 'dir_inside_bound',dir_new,
-    while not _move_tool(pos_pre, [dir_new[0], 0]):
-        if dir_new[0]==0:
-            break
-        dir_new[0] = _sign(dir_new[0]) * (abs(dir_new[0]) -1)
-    while not _move_tool(pos_pre, [0, dir_new[1]]):
-        #pdb.set_trace()
-        if dir_new[1]==0:
-            break
-        dir_new[1] = _sign(dir_new[1]) * (abs(dir_new[1]) -1)
+
+    # Yelly modification:
+    # _move_tools() function returns dir_new
+    dir_new = _move_tool(pos_pre, dir_new)
     print 'dir_new',dir_new
     return dir
 

@@ -1,3 +1,4 @@
+M
 what to consider (further):
 1. rotation[have to consider, because shoooting gun could only aim at 180 degrees forward]
 2. hit rate ()
@@ -9,8 +10,9 @@ INFO:
 * projectile speed limit: 20m/s 
 * initial HP for each robot: 2000
 * [VERIFICATION NEEDED] size of robots: 0.5m*0.5m
-* [VERIFICATION NEEDED] size of bonus detecting module: 0.1m*0.1m 
-* size of bonus area: 0.5m*0.5m
+* [VERIFICATION NEEDED] size of bonus detecting module: 0.1m*0.1m
+* [VERIFICATION NEEDED] shift from robot center to bonus detecting module center: [0, 10cm]
+* size of bonus zone: 0.5m*0.5m
 * challenge round: 180s
 * max number of projectile: 200
 * each projectile hit reduces 50HP. 
@@ -24,11 +26,11 @@ INFO:
 	Z: HP reduction of team robots
 
 for environment:
-1. [HIGH] Collision detection.
+1. [HIGH][[Yelly finished]] Collision detection.
 	Once collision detected, give the agent negative reward.
 	The reward is almost unbearable in the case of colliding into the wall (including outbound wall).
-	When collide into other robots (either friend or opponent), the reward is given according to real-world consequences.i
-2. [HIGH] buff rewarding
+	When collide into other robots (either friend or opponent), the reward is given according to real-world consequences.
+2. [HIGH] buff, HP, projectile
 3. [HIGH] explore the equation of reward relating to HP and moving. 
 	// below commentted out if the case is considered in end case...
 	//Special reward needed for winning the game by shooting all AI robots to 0,

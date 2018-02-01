@@ -7,6 +7,19 @@ scale = 0.1
 robot_size = [int(500*scale), int(500*scale)]
 act_dict = [-12, -8, -4, 0, 4, 8, 12]
 d_size = [_/2 for _ in robot_size]
+# Yelly addition:
+# bonus-related
+RFID_size = [10, 10]
+RFID_shift = [0, -10]
+RFID_d_size = [_/2 for _ in RFID_size]
+bonus_zone_side_len = int(500*scale)
+bonus_zone_x_min = int(4000*scale) - bonus_zone_side_len/2 - 1 # notice index begins from 0
+bonus_zone_x_max = int(4000*scale) + bonus_zone_side_len/2 - 1 # notice index begins from 0
+bonus_zone_y_min = int(2500*scale) - bonus_zone_side_len/2 - 1 # notice index begins from 0
+bonus_zone_y_max = int(2500*scale) + bonus_zone_side_len/2 - 1 # notice index begins from 0
+time_slice = 0.1 # interval between each decision, in second
+bonus_time = 5 # time inside bonus zone to get bonus, in second 
+bonus_steps = bonus_time / time_slice # how many continuous steps to take until get bonus
 
 def _sign(x):
     if x>=0:
@@ -327,7 +340,7 @@ def get_action(act, policy='MAX'):
 
 
 def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
-    # get state[x,y,dx,dy,shoot,hit,shooted]
+    # get state[x,y,dx,dy,shoot,hit,shooted,WallCollide,TeamCollide,AICollide]
     state_1 = []
     state_2 = []
     act_1 = [get_action(act_1[0], policy=policy), get_action(act_1[1], policy=policy)]
@@ -509,7 +522,7 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     if state_2[1]['shoot']:
         shoot(info_2[1][:2], info_1[0][:2], state_2[1], state_1[0], raw_map_img)
         shoot(info_2[1][:2], info_1[1][:2], state_2[1], state_1[1], raw_map_img)
-    
+   
 
     return state_1, state_2
 
@@ -570,20 +583,84 @@ def get_reward(info_1, info_2, act_1, act_2, policy='MAX'):
 
     return state_1, state_2, reward_1, reward_2
 
+# Yelly addition:
+# if after the action taken, the RFID module is completely inside bonus zone, return True
+# otherwise, return False
+#
+# [TODO]better identify bonus zone by different color on raw map
+# because it is safe to judge whether four corners of RFID module is inside bonus zone
+# and it's easier adapt this method to the cases where rotation is considered
+def inside_bonus_zone(pos):
+    module_x_min = pos[0] + RFID_shift[0] - RFID_d_size[0]
+    if module_x_min < bonus_zone_x_min:
+        return False
+
+    module_x_max = pos[0] + RFID_shift[0] + RFID_d_size[0]
+    if module_x_max > bonus_zone_x_max:
+        return False
+
+    module_y_min = pos[1] + RFID_shift[1] - RFID_d_size[1]
+    if module_y_min < bonus_zone_y_min:
+        return False
+
+    module_y_max = pos[1] + RFID_shift[1] + RFID_d_size[1]
+    if module_y_max > bonus_zone_y_max:
+        return False
+
+    return True
+
+# Yelly modification:
+# let this function compute new infos for two robots of one side
+# because info[3] (buff) values of the two robots correlate
 def get_new_info(info_pre, state):
-    info_pre[0] += state['dx']
-    info_pre[1] += state['dy']
-    if state['shooted']:
-        info_pre[2] -= 1
+    # robot 0 info[:3]
+    info_pre[0][0] += state[0]['dx']
+    info_pre[0][1] += state[0]['dy']
+    if state[0]['shooted']:
+        info_pre[0][2] -= 1
+    # robot 1 info[:3]
+    info_pre[1][0] += state[1]['dx']
+    info_pre[1][1] += state[1]['dy']
+    if state[1]['shooted']:
+        info_pre[1][2] -= 1
+   
+    # Yelly addition:
+    # bonus 
+    # notice that info_pre[:3] has been adapted to the new values above   
+    # once one robot get bonus, both robot buff value should equal to bonus_steps
+    if info_pre[0][3] < bonus_steps: 
+        # robot 0
+        if not inside_bonus_zone(info_pre[0][:2]):
+            info_pre[0][3] = -1
+        else:
+            info_pre[0][3] += 1
+            if info_pre[0][3] == bonus_steps:
+                info_pre[1][3] = bonus_steps
+                return info_pre
+        # robot 1
+        if not inside_bonus_zone(info_pre[1][:2]):
+            info_pre[1][3] = -1
+        else:
+            info_pre[1][3] += 1
+            if info_pre[1][3] == bonus_steps:
+                info_pre[0][3] = bonus_steps
+                return info_pre
+    
     return info_pre
 
 def get_init():
-    info_1 = [[30, 420, 100, 0],  [30, 470, 100, 0]]
-    info_2 = [[770, 420, 100,0 ], [770, 470, 100, 0]]
+    # Yelly modification: 
+    # change initial buff value to -1
+    # -1 means no accumulating buff residence before
+    # wlhen robot reside in bonus zone for a period of time,
+    # add buff value one by one until it achieves bonus_step (5/0.1),
+    # which indicate that bonus got
+    #info_1 = [[30, 420, 100, -1],  [30, 470, 100, -1]]
+    #info_2 = [[770, 420, 100, -1], [770, 470, 100, -1]]
 
     # Yelly test
-    #info_1 = [[375, 225, 100, 0],  [375, 280, 100, 0]]
-    #info_2 = [[425, 225, 100,0 ], [425, 280, 100, 0]]
+    info_1 = [[375, 225, 100, -1],  [375, 280, 100, -1]]
+    info_2 = [[425, 225, 100, -1], [425, 280, 100, -1]]
 
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
@@ -605,8 +682,22 @@ def environ(flag, info_1, info_2, act_1, act_2, policy='MAX'):
     print state_2
 
     # new info and map
-    info_1_new = [get_new_info(info_1[0], state_1[0]), get_new_info(info_1[1], state_1[1])]
-    info_2_new = [get_new_info(info_2[0], state_2[0]), get_new_info(info_2[1], state_2[1])]
+# Yelly modification:
+# let get_new_info() function compute for two robots at a time
+# because buff value is correlated for two team robots
+# i.e. if any one of the team robots gets bonus, the two robots of the team should all get bonus
+# and info[3] value of the two robots should all be 5/0.1
+#
+# [TODO] Yelly raises a quesion here:
+# If AI robots cannot get bonus at all,
+# then the HP drop for one hit on team robot and AI robot could be different,
+# so for AI robot it is meaningless to reside in bonus zone for 5s.
+# This makes the two neural networks asymmetric.
+# Possible solutions include:
+# 1. do some tricks in reward computing of each side
+# 2. Allow asymmetric, i.e. train only one nn as team robot while the other as AI robot
+    info_1_new = get_new_info(info_1, state_1)
+    info_2_new = get_new_info(info_2, state_2)
 
     map_img_new = draw_pos(info_1_new, info_2_new)
 

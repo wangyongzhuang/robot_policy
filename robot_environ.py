@@ -406,6 +406,63 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
         state_2[0]['TeamCollide'] = False
         state_2[1]['TeamCollide'] = False
 
+    # AICollide
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_2[0][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_2[0]['dx'], state_2[0]['dy']])
+    if (collide):
+        print 'team 1 robot 0 collide with team 2 robot 0, change dir from ',
+        print [state_1[0]['dx'], state_1[0]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_1[0]['AICollide'] = True
+        state_2[0]['AICollide'] = True
+        state_1[0]['dx'] = dir_tmp_1[0]
+        state_1[0]['dy'] = dir_tmp_1[1]
+        state_2[0]['dx'] = dir_tmp_2[0]
+        state_2[0]['dy'] = dir_tmp_2[1]
+    else:
+        state_1[0]['AICollide'] = False
+        state_2[0]['AICollide'] = False
+
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_2[1][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
+    if (collide):
+        print 'team 1 robot 0 collide with team 2 robot 1, change dir from ',
+        print [state_1[0]['dx'], state_1[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_1[0]['AICollide'] = True
+        state_2[1]['AICollide'] = True
+        state_1[0]['dx'] = dir_tmp_1[0]
+        state_1[0]['dy'] = dir_tmp_1[1]
+        state_2[1]['dx'] = dir_tmp_2[0]
+        state_2[1]['dy'] = dir_tmp_2[1]
+    else:
+        state_1[0]['AICollide'] = False
+        state_2[1]['AICollide'] = False
+
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[1][:2], info_2[0][:2], [state_1[1]['dx'], state_1[1]['dy']], [state_2[0]['dx'], state_2[0]['dy']])
+    if (collide):
+        print 'team 1 robot 1 collide with team 2 robot 0, change dir from ',
+        print [state_1[1]['dx'], state_1[1]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_1[1]['AICollide'] = True
+        state_2[0]['AICollide'] = True
+        state_1[1]['dx'] = dir_tmp_1[0]
+        state_1[1]['dy'] = dir_tmp_1[1]
+        state_2[0]['dx'] = dir_tmp_2[0]
+        state_2[0]['dy'] = dir_tmp_2[1]
+    else:
+        state_1[1]['AICollide'] = False
+        state_2[0]['AICollide'] = False
+
+    collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[1][:2], info_2[1][:2], [state_1[1]['dx'], state_1[1]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
+    if (collide):
+        print 'team 1 robot 1 collide with team 2 robot 1, change dir from ',
+        print [state_1[1]['dx'], state_1[1]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        state_1[1]['AICollide'] = True
+        state_2[1]['AICollide'] = True
+        state_1[1]['dx'] = dir_tmp_1[0]
+        state_1[1]['dy'] = dir_tmp_1[1]
+        state_2[1]['dx'] = dir_tmp_2[0]
+        state_2[1]['dy'] = dir_tmp_2[1]
+    else:
+        state_1[1]['AICollide'] = False
+        state_2[1]['AICollide'] = False
+
     # shoot init
     if act_1[0][-1]:
         state_1[0]['shoot']= True
@@ -510,6 +567,10 @@ def get_new_info(info_pre, state):
 def get_init():
     info_1 = [[30, 420, 100, 0],  [30, 470, 100, 0]]
     info_2 = [[770, 420, 100,0 ], [770, 470, 100, 0]]
+
+    # Yelly test
+    #info_1 = [[375, 225, 100, 0],  [375, 280, 100, 0]]
+    #info_2 = [[425, 225, 100,0 ], [425, 280, 100, 0]]
 
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new

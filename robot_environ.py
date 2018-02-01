@@ -301,7 +301,7 @@ def move_detect_wall_collide(pos_pre, dir):
     # _move_tools() function returns dir_new
     dir_new = _move_tool(pos_pre, dir_new)
     print 'dir_new',dir_new
-    return dir
+    return dir_new
 
 # Yelly comment: [TODO]need much modifications on this function!
 def shoot(pos, target, state_1, state_2, map_img):

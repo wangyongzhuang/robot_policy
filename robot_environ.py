@@ -70,11 +70,12 @@ def draw_pos(pos_1, pos_2):
     map_img = raw_map_img.copy()
     # red
     map_img = draw_pos_tool(pos_1[0][:2], np.array([255, 0, 0],dtype=np.float32), map_img)
-    # Yelly comment: why use element 2,3 here rather than 0,1 as above?    
-    map_img = draw_pos_tool(pos_1[1][2:], np.array([255, 0, 0],dtype=np.float32), map_img)
+    # Yelly modified pos_1[1][2:] to pos_1[1][:2]  
+    map_img = draw_pos_tool(pos_1[1][:2], np.array([255, 0, 0],dtype=np.float32), map_img)
     # blue
     map_img = draw_pos_tool(pos_2[0][:2], np.array([0, 255, 0],dtype=np.float32), map_img)
-    map_img = draw_pos_tool(pos_2[1][2:], np.array([0, 255, 0],dtype=np.float32), map_img)
+    # Yelly modified pos_2[1][2:] to pos_2[1][:2]  
+    map_img = draw_pos_tool(pos_2[1][:2], np.array([0, 255, 0],dtype=np.float32), map_img)
     return map_img
 
 # Yelly modification:

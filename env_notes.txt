@@ -12,6 +12,8 @@ INFO:
 * [VERIFICATION NEEDED] size of robots: 0.5m*0.5m
 * [VERIFICATION NEEDED] size of bonus detecting module: 0.1m*0.1m
 * [VERIFICATION NEEDED] shift from robot center to bonus detecting module center: [0, 10cm]
+* [VERIFICATION NEEDED] whether shifting is allowed for RFID module
+* [VERIFICATION NEEDED] might be slope on the edge of bonus zone
 * size of bonus zone: 0.5m*0.5m
 * challenge round: 180s
 * max number of projectile: 200
@@ -30,14 +32,23 @@ for environment:
 	Once collision detected, give the agent negative reward.
 	The reward is almost unbearable in the case of colliding into the wall (including outbound wall).
 	When collide into other robots (either friend or opponent), the reward is given according to real-world consequences.
-2. [HIGH] buff, HP, projectile
+2. [HIGH][Yelly finished information store and update, but corresponding reward remains for next step] buff, HP, projectile
 3. [HIGH] explore the equation of reward relating to HP and moving. 
 	// below commentted out if the case is considered in end case...
 	//Special reward needed for winning the game by shooting all AI robots to 0,
 	//as well as losing the game as self HP to 0.
-4. [MEDIUM] rotation consideration
-5. [MEDIUM] consider the case in which one of the two robots die
-5. [LOW] compute the real location after action is taken (I wonder if the robot can actually move to exact place as the action persumes)
-6. [LOW] corner cases specifing, including collision.
-7. [LOW] hit rate consideration
-8. [LOW] calculate the time since shooting action decided till the first projectile hit armor module (might have to take whether last action is shooting into consideration). Compute frequency function.
+4. [MEDIUM] more than one robot shoot at one robot
+5. [MEDIUM] one robot could only shoot one robot at a time
+6. [MEDIUM][dismissed][vision module and control module have to ensure that the gun always aim at opponent robot if it's insight] rotation consideration
+7. [LOW] add the information of whether a robot died. Consider the case in which one of the two robots die
+8. [LOW] compute the real location after action is taken (I wonder if the robot can actually move to exact place as the action persumes)
+9. [LOW] corner cases specifing, including collision.
+
+10. [LOW] hit rate consideration
+11. [LOW] SHOOTING DELAY.  calculate the time since shooting action decided till the first projectile hit armor module (might have to take whether last action is shooting into consideration). Compute frequency function.
+
+further discussion:
+1. how about input specific info only, rather than the img?
+	notice that for now the input is the inital map and never change!
+2. add info: projectile, opponent dead representation
+3. should we consider rotation(action) when it comes to RFID module? Do we have the information of whether the RFID module is recognized by the bonus zone in real match?

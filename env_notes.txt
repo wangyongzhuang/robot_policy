@@ -1,4 +1,3 @@
-M
 what to consider (further):
 1. rotation[have to consider, because shoooting gun could only aim at 180 degrees forward]
 2. hit rate ()
@@ -54,3 +53,12 @@ further discussion:
 4. we're only giving the (supposed to be ) optimal action a corresponding reward while setting other actions rewards as zero, then we'll never know what will happen if taking other actions. There might be better solutions nevertheless.
 5. We're assuming movement on X axis, movement on Y axis, and shooting as three independent actions. If we calculate reward for suboptimal actions, i.e. discussion [4] solved, should we compute the integeration of reward for each of the action upon all other action axis?
 6. agent should know which robots are dead - could be implemented by using different color in input map, or add a element representing liveness if input is pure info-vector.
+7. to decrease the complexity of acollision detection, we may hold the robot still when collision is detected, i.e. set the movement on both X and Y axis to 0. 
+	Collision detection might use matrix multiplex. And determine whether the full track(colored) has intersection with any of the obstacles.
+	Efficiency remains to future proof.
+	This can be employed by either of the two implementations:
+	1) let agent detect collision. If the action choosed by network leads to collision, agent choose not to take that action.
+	This implementation requires extra computation at agent, i.e. adding computation in real match.
+	And this method is practicle only if the collision detection is very precise, otherwise the agent will lead to many suboptimal acitons
+	2) assume the robot goes back to the previous place after collison.
+	Even if this is not always the case, the deviation is acceptable as the length of each step is limited.

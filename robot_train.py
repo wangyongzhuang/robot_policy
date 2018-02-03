@@ -52,15 +52,15 @@ for global_step in range(flag.steps):
     act_1_p, act_2_p = sess.run([cnn_1.q_p, cnn_2.q_p], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img})
 
     # environ and optimize
-# Yelly modification: delete the 'raw_map_img' parameter passed to agent()
     if global_step%10==0:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, policy='MAX')
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, map_img, policy='MAX')
     else:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, policy='RANDOM')
+        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, map_img, policy='RANDOM')
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 
     print 'Itr_%d loss: %0.3f'%(global_step, l)
 
     # Yelly deleted the parameter 'bars' as robot_client has this variable already
+    # Yelly comment: here changes map_img object
     draw_state(screen, info_1, info_2)

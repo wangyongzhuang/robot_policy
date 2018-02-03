@@ -360,20 +360,20 @@ def hitRate(pos, target, map_img):
     return 1
 
 # Yelly addition:
-# usage: shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, raw_map_img)    
-def shootAt(source_pos, target_pos, source_state, target_state, raw_map_img): 
+# usage: shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, map_img)    
+def shootAt(source_pos, target_pos, source_state, target_state, map_img): 
     hit_rate_00 = 0
     hit_rate_01 = 0
     hit_rate_10 = 0
     hit_rate_11 = 0
     
     if source_state[0]['shoot']:
-        hit_rate_00 = hitRate(source_pos[0], target_pos[0], raw_map_img)
-        hit_rate_01 = hitRate(source_pos[0], target_pos[1], raw_map_img)
+        hit_rate_00 = hitRate(source_pos[0], target_pos[0], map_img)
+        hit_rate_01 = hitRate(source_pos[0], target_pos[1], map_img)
 
     if source_state[1]['shoot']:
-        hit_rate_10 = hitRate(source_pos[1], target_pos[0], raw_map_img)
-        hit_rate_11 = hitRate(source_pos[1], target_pos[1], raw_map_img)
+        hit_rate_10 = hitRate(source_pos[1], target_pos[0], map_img)
+        hit_rate_11 = hitRate(source_pos[1], target_pos[1], map_img)
 
 
     # shooting from source robot 0
@@ -455,7 +455,7 @@ def get_action(act, hp, proj_num, policy='MAX'):
         return [act_dict[0], act_dict[0], 0]
 
 
-def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
+def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
     # get state[x,y,dx,dy,shoot,hit,shooted,WallCollide,TeamCollide,AICollide]
     state_1 = []
     state_2 = []
@@ -631,13 +631,7 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     state_2[1]['hit']      = False
     state_2[1]['shooted']  = 0
     
-    # Yelly comment: 
-    # [TODO] parameter 'map_img' passed to shoot() function should not be raw_map_img
-    # but the map_img reflecting robots,
-    # However as shoot() function will be modified further,
-    # now I just pass raw_map_img to shoot() function (as is did by Yongzhuang)
-
-    # Yelly comment further:
+    # Yelly comment:
     # assuming visual module promises that once there is an opponent robot insight,
     # shooting will hit.
     # [TODO] hit rate (may have to consider which robot the visual module will choose to shoot)
@@ -651,8 +645,8 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     # also there's problem of selecting which robot to shoot.
     # Thus, there should be one function handling the shooting 
     # from two robots of one side to one of the robots of the other side.
-    shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, raw_map_img)    
-    shootAt(info_2[:][:2], info_1[:][:2], state_2, state_1, raw_map_img)    
+    shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, map_img)    
+    shootAt(info_2[:][:2], info_1[:][:2], state_2, state_1, map_img)    
 
     return state_1, state_2
 
@@ -720,9 +714,9 @@ def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt, hp):
 
     return state
 
-def get_reward(info_1, info_2, act_1, act_2, policy='MAX'):
+def get_reward(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
     # init
-    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, policy=policy)
+    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, map_img,  policy=policy)
     reward_1 = np.zeros([2,15])
     reward_2 = np.zeros([2,15])
 
@@ -859,12 +853,12 @@ def get_init():
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1, act_2, policy='MAX'):
+def environ(flag, info_1, info_2, act_1, act_2, map_img, policy='MAX'):
     # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
 
     # state and reward
-    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, policy=policy)
+    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img, policy=policy)
     #pdb.set_trace()
 
     print '\nstate:'

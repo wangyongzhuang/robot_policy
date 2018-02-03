@@ -5,8 +5,7 @@ import pygame
 import pdb
 from robot_environ import *
 
-# Yelly modification: deleted 'raw_map_img' parameter because robot_environ.py already has that global variable
-def agent(flag, info_1, info_2, act_1_p, act_2_p, policy='MAX'):
+def agent(flag, info_1, info_2, act_1_p, act_2_p, map_img, policy='MAX'):
     # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
 
@@ -24,7 +23,7 @@ def agent(flag, info_1, info_2, act_1_p, act_2_p, policy='MAX'):
 
 
     # environ
-    info_1_new, info_2_new, reward_1, reward_2, map_img_new = environ(flag, info_1, info_2, act_1, act_2, policy=policy)
+    info_1_new, info_2_new, reward_1, reward_2, map_img_new = environ(flag, info_1, info_2, act_1, act_2, map_img, policy=policy)
 
 
 

@@ -20,11 +20,22 @@ bonus_zone_y_max = int(2500*scale) + bonus_zone_side_len/2 - 1 # notice index be
 time_slice = 0.1 # interval between each decision, in second
 bonus_time = 5 # time inside bonus zone to get bonus, in second 
 bonus_steps = bonus_time / time_slice # how many continuous steps to take until get bonus
+# Yelly addition:
+# reward related
+reward_a = 6.0/(4.0 + 2)
+reward_b = 75.0/(4.0 + 2)
+reward_c = -2.0/(1.0 + 2) # notice: this is negative coefficent
 
 def _sign(x):
     if x>=0:
         return 1
     return -1
+
+def _max(a, b):
+    if a>= b:
+        return a
+    else:
+        return b
 
 def create_raw_map_img():
     img = 255 * np.ones([int(8000*scale), int(5000*scale), 3], dtype=np.float32)
@@ -317,6 +328,7 @@ def move_detect_wall_collide(pos_pre, dir):
     print 'dir_new',dir_new
     return dir_new
 
+''' 
 # Yelly comment: [TODO]need much modifications on this function!
 def shoot(pos, target, state_1, state_2, map_img):
     flag = False
@@ -331,6 +343,97 @@ def shoot(pos, target, state_1, state_2, map_img):
     state_1['hit'] = True
     state_2['shooted'] = True
     return True, state_1, state_2
+'''
+
+# Yelly addition:
+# At present return value could only be 0 or 1 for simplicity, 
+# it is feasible to introduce hit rate calculation from visual module to this function 
+def hitRate(pos, target, map_img):
+    dx   = int(robot_size[0]/10)
+    dy   = int(robot_size[0]/10) # Yelly comment: should be robot_size[1]/10 ?
+    targets = [[target[0]+dx, target[1]+dy], [target[0]+dx, target[1]-dy], [target[0]-dx, target[1]+dy], [target[0]-dx, target[1]-dy]]
+    for tar in targets:
+        for tmp_x in range(pos[0], tar[0]):
+            tmp_y = pos[1] + int((tar[1]-pos[1])/(tar[0]-pos[0])) * (tmp_x-pos[0])
+            if sum(map_img[tmp_x, tmp_y]) < 2 * 255:
+                return 0
+    return 1
+
+# Yelly addition:
+# usage: shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, raw_map_img)    
+def shootAt(source_pos, target_pos, source_state, target_state, raw_map_img): 
+    hit_rate_00 = 0
+    hit_rate_01 = 0
+    hit_rate_10 = 0
+    hit_rate_11 = 0
+    
+    if source_state[0]['shoot']:
+        hit_rate_00 = hitRate(source_pos[0], target_pos[0], raw_map_img)
+        hit_rate_01 = hitRate(source_pos[0], target_pos[1], raw_map_img)
+
+    if source_state[1]['shoot']:
+        hit_rate_10 = hitRate(source_pos[1], target_pos[0], raw_map_img)
+        hit_rate_11 = hitRate(source_pos[1], target_pos[1], raw_map_img)
+
+
+    # shooting from source robot 0
+
+    # assuming visual module will choose to shoot the target with higher hit rate
+    if hit_rate_00 >= hit_rate_01:
+        # if shoot, aim at robot 0 of the target team
+
+        # when hit rate is properly introduced, there should be a randomized function 
+        # to decide whether this shooting could hit
+        if hit_rate_00 <= 0.5:
+            # not hit
+            source_state[0]['hit'] = False
+        else:
+            # hit
+            source_state[0]['hit'] = True
+            target_state[0]['shooted'] += 1 # 'shooted' field is initialized by the caller of this function
+    else:
+        # if shoot, aim at robot 1 of the target team
+
+        # when hit rate is properly introduced, there should be a randomized function 
+        # to decide whether this shooting could hit
+        if hit_rate_01 <= 0.5:
+            # not hit
+            source_state[0]['hit'] = False
+        else:
+            # hit
+            source_state[0]['hit'] = True
+            target_state[1]['shooted'] += 1
+
+    # shooting from source robot 1
+
+    # assuming visual module will choose to shoot the target with higher hit rate
+    if hit_rate_10 >= hit_rate_11:
+        # if shoot, aim at robot 0 of the target team
+
+        # when hit rate is properly introduced, there should be a randomized function 
+        # to decide whether this shooting could hit
+        if hit_rate_10 <= 0.5:
+            # not hit
+            source_state[1]['hit'] = False
+        else:
+            # hit
+            source_state[1]['hit'] = True
+            target_state[0]['shooted'] += 1
+    else:
+        # if shoot, aim at robot 1 of the target team
+
+        # when hit rate is properly introduced, there should be a randomized function 
+        # to decide whether this shooting could hit
+        if hit_rate_11 <= 0.5:
+            # not hit
+            source_state[1]['hit'] = False
+        else:
+            # hit
+            source_state[1]['hit'] = True
+            target_state[1]['shooted'] += 1
+
+    return source_state, target_state
+
 
 # Yelly comment: [TODO] action selection (according to policy) should be put into agent logic
 def get_action(act, hp, proj_num, policy='MAX'):
@@ -361,7 +464,7 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
     # 2. pass projectile cnt to get_action function to prevent robot with no projectile from shooting
     act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4], policy=policy), get_action(act_1[1], info_1[1][2], info_1[1][4], policy=policy)]
     act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4], policy=policy), get_action(act_2[1], info_2[1][2], info_2[1][4], policy=policy)]
-
+    
 
     # move:[dx,dy]
     # Yelly comment: divide collision cases into three clases:
@@ -499,56 +602,83 @@ def get_state(info_1, info_2, act_1, act_2, policy='MAX'):
         state_2[1]['AICollide'] = False
 
     # shoot init
+    # Yelly modification:
+    # shooted field should have value space of [0,1,2] 
+    # representing how many projectiles actually hit this robot
     if act_1[0][-1]:
         state_1[0]['shoot']= True
     else:
         state_1[0]['shoot']= False
     state_1[0]['hit']      = False
-    state_1[0]['shooted']  = False
+    state_1[0]['shooted']  = 0
     if act_1[1][-1]:
         state_1[1]['shoot']= True
     else:
         state_1[1]['shoot']= False
     state_1[1]['hit']      = False
-    state_1[1]['shooted']  = False
+    state_1[1]['shooted']  = 0
 
     if act_2[0][-1]:
         state_2[0]['shoot']= True
     else:
         state_2[0]['shoot']= False
     state_2[0]['hit']      = False
-    state_2[0]['shooted']  = False
+    state_2[0]['shooted']  = 0
     if act_2[1][-1]:
         state_2[1]['shoot']= True
     else:
         state_2[1]['shoot']= False
     state_2[1]['hit']      = False
-    state_2[1]['shooted']  = False
+    state_2[1]['shooted']  = 0
     
     # Yelly comment: 
     # [TODO] parameter 'map_img' passed to shoot() function should not be raw_map_img
     # but the map_img reflecting robots,
     # However as shoot() function will be modified further,
     # now I just pass raw_map_img to shoot() function (as is did by Yongzhuang)
-    # hit or shooted
-    if state_1[0]['shoot']:
-        shoot(info_1[0][:2], info_2[0][:2], state_1[0], state_2[0], raw_map_img)
-        shoot(info_1[0][:2], info_2[1][:2], state_1[0], state_2[1], raw_map_img)
-    if state_1[1]['shoot']:
-        shoot(info_1[1][:2], info_2[0][:2], state_1[1], state_2[0], raw_map_img)
-        shoot(info_1[1][:2], info_2[1][:2], state_1[1], state_2[1], raw_map_img)
 
-    if state_2[0]['shoot']:
-        shoot(info_2[0][:2], info_1[0][:2], state_2[0], state_1[0], raw_map_img)
-        shoot(info_2[0][:2], info_1[1][:2], state_2[0], state_1[1], raw_map_img)
-    if state_2[1]['shoot']:
-        shoot(info_2[1][:2], info_1[0][:2], state_2[1], state_1[0], raw_map_img)
-        shoot(info_2[1][:2], info_1[1][:2], state_2[1], state_1[1], raw_map_img)
-   
+    # Yelly comment further:
+    # assuming visual module promises that once there is an opponent robot insight,
+    # shooting will hit.
+    # [TODO] hit rate (may have to consider which robot the visual module will choose to shoot)
+    # assume that visual module promises not to shoot friend robot
+
+    # hit or shooted
+
+    # Yelly modification:
+    # shooted field should have value space of [0,1,2] 
+    # representing how many projectiles actually hit this robot
+    # also there's problem of selecting which robot to shoot.
+    # Thus, there should be one function handling the shooting 
+    # from two robots of one side to one of the robots of the other side.
+    shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, raw_map_img)    
+    shootAt(info_2[:][:2], info_1[:][:2], state_2, state_1, raw_map_img)    
 
     return state_1, state_2
 
 # Yelly modification: prevent dead robots from getting reward
+# score calculation according to DJI: Score = a*X + b*Y - c*Z
+#	a = 6.0 / (4.0 + ROBOT_NUM)
+#	b = 75.0 / (4.0 + ROBOT_NUM)
+#	c = 2.0 / (1.0 + ROBOT_NUM)
+#	X: HP reduction of AI robots
+#	Y: remaining time (in seconds) when both AI robots are destroyed (or 0 if not destroyed)
+#	Z: HP reduction of team robots
+# for every step, Yelly set the reward as:
+# Score-step = a*x + b*y + c*z
+#	x: HP reduction of AI robots in this step
+#	y: /*- (1s / 0.1s)*/ [this part of score should be added only at the ending.]
+#		Given that long-term reward will be reflected by training in DQN
+#	z: HP reduction of team robots in this step
+# Notice: we're calculating reward for two robots seperately, 
+# 	based on the assumption that the optimal action of the team is the combination of 
+#	optimal actions of the two robots seperately.
+# [TODO]should there be something like a coefficient
+# to deal with the score we get and the final reward? 
+# This is vital to balance the reward get from final score and movement 
+# and loss of projectile, etc. 
+# [TODO] whether we need to normalize the reward we computed?
+# (notice that q_p computed by the network is normalized for each seperate action)
 def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt, hp):
     if hp == 0:
         state['reward'] = 0
@@ -560,17 +690,21 @@ def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt, hp):
     # shoot, hit or shooted
     if state['hit']:
         if my_bonus_cnt == bonus_steps:
-            state['reward'] += 15. 
+           # Yelly modification:
+           # hit reward counted as reward_a*reduction
+           # notice that a robot can shoot at one robot in a time slice
+           state['reward'] += reward_a * 75. 
         else:
-            state['reward'] += 10.
+            state['reward'] += reward_a * 50.
     elif state['shoot'] and not state['hit']:
         state['reward'] += -1.
 
-    if state['shooted']:
-        if oppo_bonus_cnt == bonus_steps:
-            state['reward'] += -15. 
-        else:
-            state['reward'] += -10.
+    # Yelly modification:
+    # a robot might be shooted by more than one robot
+    if oppo_bonus_cnt == bonus_steps:
+        state['reward'] += reward_c * 75 * state['shooted'] 
+    else:
+        state['reward'] += reward_c * 50 * state['shooted']
 
     # Yelly addition:
     # collision
@@ -703,7 +837,7 @@ def get_new_info(info_pre, state):
             if info_pre[1][3] == bonus_steps:
                 info_pre[0][3] = bonus_steps
                 return info_pre
-    
+   
     return info_pre
 
 def get_init():

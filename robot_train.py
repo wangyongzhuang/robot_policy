@@ -52,12 +52,15 @@ for global_step in range(flag.steps):
 
     # environ and optimize
     if global_step%10==0:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
+        info_1, info_2, r1, r2, map_img_new, state_1, state_2 = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
     else:
-        info_1, info_2, r1, r2, map_img_new = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
+        info_1, info_2, r1, r2, map_img_new, state_1, state_2 = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
+
+    draw_state(screen, bars, state_1, state_2, info_1, info_2)
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 
     print 'Itr_%d loss: %0.3f'%(global_step, l)
 
-    draw_state(screen, bars, info_1, info_2)
+    draw_info(screen, bars, info_1, info_2)
+    pygame.time.delay(100)

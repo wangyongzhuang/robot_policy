@@ -23,8 +23,8 @@ def agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX'):
 
 
     # environ
-    info_1_new, info_2_new, reward_1, reward_2, map_img_new = environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy=policy)
+    info_1_new, info_2_new, reward_1, reward_2, map_img_new, state_1, state_2 = environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy=policy)
 
 
 
-    return info_1_new, info_2_new, reward_1, reward_2, map_img_new
+    return info_1_new, info_2_new, reward_1, reward_2, map_img_new, state_1, state_2

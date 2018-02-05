@@ -1,0 +1,64 @@
+what to consider (further):
+1. rotation[have to consider, because shoooting gun could only aim at 180 degrees forward]
+2. hit rate ()
+3. speed (it might affect hit rate?)
+4. 'shooted' might be represented as integers as speed of bullets should be much higher than that of robots.
+
+INFO:
+* projectile frequency limit: 10Hz
+* projectile speed limit: 20m/s 
+* initial HP for each robot: 2000
+* [VERIFICATION NEEDED] size of robots: 0.5m*0.5m
+* [VERIFICATION NEEDED] size of bonus detecting module: 0.1m*0.1m
+* [VERIFICATION NEEDED] shift from robot center to bonus detecting module center: [0, 10cm]
+* [VERIFICATION NEEDED] whether shifting is allowed for RFID module
+* [VERIFICATION NEEDED] might be slope on the edge of bonus zone
+* size of bonus zone: 0.5m*0.5m
+* challenge round: 180s
+* max number of projectile: 200
+* each projectile hit reduces 50HP. 
+* when bonus detecting module reside in bonus area for 5s, projectile hit from all team robots reduces 75HP
+* score calculation: Score = a*X + b*Y - c*Z.
+	a = 6.0/( 4.0 + ROBOT_NUM)
+	b = 75.0/( 4.0 + ROBOT_NUM)
+	c = 2.0/( 1.0 + ROBOT_NUM)
+	X: HP reduction of AI robots
+	Y: remaining time (in seconds) when both AI robots are destroyed (or 0 if not destroyed)
+	Z: HP reduction of team robots
+
+for environment:
+1. [HIGH][[Yelly finished]] Collision detection.
+	Once collision detected, give the agent negative reward.
+	The reward is almost unbearable in the case of colliding into the wall (including outbound wall).
+	When collide into other robots (either friend or opponent), the reward is given according to real-world consequences.
+2. [HIGH][Yelly finished information store and update, but corresponding reward remains for next step] buff, HP, projectile
+3. [HIGH][Yelly did it in a naive way, URGENTLY needs further discussion] explore the equation of reward relating to HP and moving. 
+	// below commentted out if the case is considered in end case...
+	//Special reward needed for winning the game by shooting all AI robots to 0,
+	//as well as losing the game as self HP to 0.
+4. [MEDIUM][Yelly finished] more than one robot shoot at one robot
+5. [MEDIUM][Yelly finished] one robot could only shoot one robot at a time
+6. [MEDIUM][dismissed][vision module and control module have to ensure that the gun always aim at opponent robot if it's insight] rotation consideration
+7. [LOW] add the information of whether a robot died. Consider the case in which one of the two robots die
+8. [LOW] compute the real location after action is taken (I wonder if the robot can actually move to exact place as the action persumes)
+9. [LOW] corner cases specifing, including collision.
+10. [LOW] hit rate consideration
+11. [LOW] SHOOTING DELAY.  calculate the time since shooting action decided till the first projectile hit armor module (might have to take whether last action is shooting into consideration). Compute frequency function.
+
+further discussion:
+1. how about input specific info only, rather than the img?
+	notice that for now the input is the inital map and never change!
+2. add info: projectile, opponent dead representation
+3. should we consider rotation(action) when it comes to RFID module? Do we have the information of whether the RFID module is recognized by the bonus zone in real match?
+4. we're only giving the (supposed to be ) optimal action a corresponding reward while setting other actions rewards as zero, then we'll never know what will happen if taking other actions. There might be better solutions nevertheless.
+5. We're assuming movement on X axis, movement on Y axis, and shooting as three independent actions. If we calculate reward for suboptimal actions, i.e. discussion [4] solved, should we compute the integeration of reward for each of the action upon all other action axis?
+6. agent should know which robots are dead - could be implemented by using different color in input map, or add a element representing liveness if input is pure info-vector.
+7. to decrease the complexity of acollision detection, we may hold the robot still when collision is detected, i.e. set the movement on both X and Y axis to 0. 
+	Collision detection might use matrix multiplex. And determine whether the full track(colored) has intersection with any of the obstacles.
+	Efficiency remains to future proof.
+	This can be employed by either of the two implementations:
+	1) let agent detect collision. If the action choosed by network leads to collision, agent choose not to take that action.
+	This implementation requires extra computation at agent, i.e. adding computation in real match.
+	And this method is practicle only if the collision detection is very precise, otherwise the agent will lead to many suboptimal acitons
+	2) assume the robot goes back to the previous place after collison.
+	Even if this is not always the case, the deviation is acceptable as the length of each step is limited.

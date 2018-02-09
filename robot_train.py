@@ -11,9 +11,8 @@ import pdb
 
 pygame.init()
 screen = pygame.display.set_mode((800, 500), 0, 32)
-raw_map_img, bars = create_raw_map_img()
 flag = config()
-draw_init(screen, bars)
+draw_init(screen) # Yelly deleted the parameter 'bars' as robot_client has this variable already
 
 # model
 with tf.variable_scope('cnn_1') as scope:
@@ -46,7 +45,9 @@ sess.run(tf.global_variables_initializer())
 # train
 info_1, info_2, map_img = get_init()
 for global_step in range(flag.steps):
-    if global_step%300==0:
+    # Yelly modification:
+    # round is over when two robots of one side both have 0 HP
+    if global_step%300==0 or (info_1[0][2] == 0 and info_1[1][2] == 0) or (info_2[0][2] == 0 and info_2[1][2] == 0):
         info_1, info_2, map_img = get_init()
     act_1_p, act_2_p = sess.run([cnn_1.q_p, cnn_2.q_p], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img})
 

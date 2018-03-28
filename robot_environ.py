@@ -6,7 +6,7 @@ import pdb
 scale = 0.1
 robot_size = [int(500*scale), int(500*scale)]
 act_dict = [-12, -8, -4, 0, 4, 8, 12]
-d_size = [_/2 for _ in robot_size]
+d_size = [_//2 for _ in robot_size]
 
 def _sign(x):
     if x>=0:
@@ -39,6 +39,26 @@ def create_raw_map_img():
     img[int(scale*4600):int(scale*4900), int(scale*0):int(scale*2000), :] = 0
     bars.append([int(scale*3100),int(scale*3000), int(scale*(3400-3100)), int(scale*(5000-3000))])
     bars.append([int(scale*4600),int(scale*0), int(scale*(3400-3100)), int(scale*(5000-3000))])
+    scale_topright = 0.05;
+    # bar_topright
+    bars.append([int(scale_topright * 1200)+8000*scale, int(scale_topright * 1000), int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 6000)+8000*scale, int(scale_topright * 3700), int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 0)+8000*scale, int(scale_topright * 2500), int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 7200)+8000*scale, int(scale_topright * 2200), int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 1800)+8000*scale, int(scale_topright * 2300), int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 5900)+8000*scale, int(scale_topright * 1500), int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 3100)+8000*scale, int(scale_topright * 3000), int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+    bars.append([int(scale_topright * 4600)+8000*scale, int(scale_topright * 0), int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+
+    #bar_bottomright
+    bars.append([int(scale_topright * 1200) + 8000 * scale, int(scale_topright * 1000) + 2500*scale, int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 6000) + 8000 * scale, int(scale_topright * 3700) + 2500*scale, int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 0) + 8000 * scale, int(scale_topright * 2500) + 2500*scale, int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 7200) + 8000 * scale, int(scale_topright * 2200) + 2500*scale, int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 1800) + 8000 * scale, int(scale_topright * 2300) + 2500*scale, int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 5900) + 8000 * scale, int(scale_topright * 1500) + 2500*scale, int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 3100) + 8000 * scale, int(scale_topright * 3000) + 2500*scale, int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+    bars.append([int(scale_topright * 4600) + 8000 * scale, int(scale_topright * 0) + 2500*scale, int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
 
     return img, bars
 
@@ -81,10 +101,12 @@ def move(pos_pre, dir, map_img):
         dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
 
     # bar
+    '''
     print 'move to:', [pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])],
 
     print sum(map_img[pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]]), sum(map_img[pos_pre[0], pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])])
     print 'dir',dir,
+    '''
     while not _move_tool(pos_pre, [dir[0], 0], map_img):
         if dir[0]==0:
             break
@@ -94,6 +116,7 @@ def move(pos_pre, dir, map_img):
         if dir[1]==0:
             break
         dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
+
     '''
     while sum(map_img[pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]])<765:
         pdb.set_trace()
@@ -106,7 +129,9 @@ def move(pos_pre, dir, map_img):
             break
         dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
     '''
+    '''
     print 'dir_new',dir
+    '''
     return dir
 
 def shoot(pos, target, state_1, state_2, map_img):
@@ -266,9 +291,11 @@ def environ(flag, info_1, info_2, act_1, act_2, raw_map_img, policy='MAX'):
     state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, raw_map_img, policy=policy)
     #pdb.set_trace()
 
+    '''
     print '\nstate:'
     print state_1
     print state_2
+    '''
 
     # new info and map
     info_1_new = [get_new_info(info_1[0], state_1[0]), get_new_info(info_1[1], state_1[1])]

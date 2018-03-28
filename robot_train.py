@@ -10,7 +10,8 @@ from robot_agent import *
 import pdb
 
 pygame.init()
-screen = pygame.display.set_mode((800, 500), 0, 32)
+# screen = pygame.display.set_mode((800, 500), 0, 32)
+screen = pygame.display.set_mode((1200, 500), 0, 32)
 raw_map_img, bars = create_raw_map_img()
 flag = config()
 draw_init(screen, bars)
@@ -60,7 +61,9 @@ for global_step in range(flag.steps):
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 
+    '''
     print 'Itr_%d loss: %0.3f'%(global_step, l)
+    '''
 
     draw_info(screen, bars, info_1, info_2)
     pygame.time.delay(100)

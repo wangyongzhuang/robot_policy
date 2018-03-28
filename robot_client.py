@@ -21,6 +21,9 @@ def draw_init(screen, bars):
     for i in range(len(bars)):
         pygame.draw.rect(screen, [0,0,0], bars[i], 0)
 
+    pygame.draw.line(screen, BLACK, [800, 0], [800, 500], 1)
+    pygame.draw.line(screen, BLACK, [800, 250], [1200, 250], 1)
+
     pygame.display.update()
 
 def draw_robot(screen, pos, color=[255,0,0]):

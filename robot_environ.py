@@ -6,7 +6,7 @@ import pdb
 scale = 0.1
 robot_size = [int(500*scale), int(500*scale)]
 act_dict = [-12, -8, -4, 0, 4, 8, 12]
-d_size = [_//2 for _ in robot_size]
+d_size = [_/2 for _ in robot_size]
 
 def _sign(x):
     if x>=0:
@@ -101,12 +101,11 @@ def move(pos_pre, dir, map_img):
         dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
 
     # bar
-    '''
     print 'move to:', [pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])],
 
     print sum(map_img[pos_pre[0]+_sign(dir[0])*(abs(dir[0])+d_size[0]), pos_pre[1]]), sum(map_img[pos_pre[0], pos_pre[1]+_sign(dir[1])*(abs(dir[1])+d_size[1])])
     print 'dir',dir,
-    '''
+
     while not _move_tool(pos_pre, [dir[0], 0], map_img):
         if dir[0]==0:
             break
@@ -129,9 +128,8 @@ def move(pos_pre, dir, map_img):
             break
         dir[1] = _sign(dir[1]) * (abs(dir[1]) -1)
     '''
-    '''
     print 'dir_new',dir
-    '''
+
     return dir
 
 def shoot(pos, target, state_1, state_2, map_img):

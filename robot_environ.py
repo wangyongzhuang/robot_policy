@@ -942,6 +942,7 @@ def environ(flag, info_1, info_2, act_1, act_2, map_img):
     #print state_2
 
     # new info and map
+
     # Yelly modification:
     # let get_new_info() function compute for two robots at a time
     # because buff value is correlated for two team robots
@@ -962,4 +963,4 @@ def environ(flag, info_1, info_2, act_1, act_2, map_img):
     map_img_new = draw_pos(info_1_new, info_2_new)
 
 
-    return info_1_new, info_2_new, reward_1, reward_2, map_img_new
+    return info_1_new, info_2_new, reward_1, reward_2, map_img_new, state_1, state_2

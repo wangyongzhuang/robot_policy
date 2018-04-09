@@ -65,6 +65,26 @@ def create_raw_map_img():
     img[int(scale*4600):int(scale*4900), int(scale*0):int(scale*2000), :] = 0
     bars.append([int(scale*3100),int(scale*3000), int(scale*(3400-3100)), int(scale*(5000-3000))])
     bars.append([int(scale*4600),int(scale*0), int(scale*(3400-3100)), int(scale*(5000-3000))])
+    scale_topright = 0.05;
+    # bar_topright
+    bars.append([int(scale_topright * 1200)+8000*scale, int(scale_topright * 1000), int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 6000)+8000*scale, int(scale_topright * 3700), int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 0)+8000*scale, int(scale_topright * 2500), int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 7200)+8000*scale, int(scale_topright * 2200), int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 1800)+8000*scale, int(scale_topright * 2300), int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 5900)+8000*scale, int(scale_topright * 1500), int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 3100)+8000*scale, int(scale_topright * 3000), int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+    bars.append([int(scale_topright * 4600)+8000*scale, int(scale_topright * 0), int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+
+    #bar_bottomright
+    bars.append([int(scale_topright * 1200) + 8000 * scale, int(scale_topright * 1000) + 2500*scale, int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 6000) + 8000 * scale, int(scale_topright * 3700) + 2500*scale, int(scale_topright * (2000 - 1200)), int(scale_topright * (1300 - 1000))])
+    bars.append([int(scale_topright * 0) + 8000 * scale, int(scale_topright * 2500) + 2500*scale, int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 7200) + 8000 * scale, int(scale_topright * 2200) + 2500*scale, int(scale_topright * (800 - 0)), int(scale_topright * (2800 - 2500))])
+    bars.append([int(scale_topright * 1800) + 8000 * scale, int(scale_topright * 2300) + 2500*scale, int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 5900) + 8000 * scale, int(scale_topright * 1500) + 2500*scale, int(scale_topright * (2100 - 1800)), int(scale_topright * (3500 - 2300))])
+    bars.append([int(scale_topright * 3100) + 8000 * scale, int(scale_topright * 3000) + 2500*scale, int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
+    bars.append([int(scale_topright * 4600) + 8000 * scale, int(scale_topright * 0) + 2500*scale, int(scale_topright * (3400 - 3100)), int(scale_topright * (5000 - 3000))])
 
     return img, bars
 

@@ -21,9 +21,9 @@ if __name__ == '__main__':
     # act_1_p = np.array([[0,0,0,0,0,0,1,0,0,0,0,0,0,1,1],[0,0,0,0,0,0,1,0,0,0,0,0,0,1,1]])
     act_2_p = np.zeros((2, flag.mov_num * 2 + 1), np.int64)
     act_2_p[:, 0] = 1
-    act_2_p[:, -1] = 1
+    act_2_p[:, -1] = 0
     act_2_p[0, -2] = 1
-    act_2_p[1, flag.mov_num] = 1
+    act_2_p[1, flag.mov_num] = 0
 
     # test
     info_1, info_2, map_img = get_init()

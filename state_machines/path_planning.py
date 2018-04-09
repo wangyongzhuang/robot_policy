@@ -121,7 +121,7 @@ class PathPlanning:
         :param weight_map_init:
         :return:
         """
-        print('# In a-star', cur_pos_init, dst_pos_init)
+        print ('# In a-star', cur_pos_init, dst_pos_init)
 
         # resize
         weight_map = self.reshapeMap(weight_map_init)

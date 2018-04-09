@@ -19,18 +19,14 @@ from state_machines.norm_attack import NormAttack
 
 import pdb
 act_dict = [-12, -8, -4, -2, -1, 0, 1, 2, 4, 8, 12]
-# get_init()
-#info_1 = [[30, 30, 100, 0],  [30, 470, 100, 0]]
-#info_2 = [[770, 30, 100,0 ], [770, 470, 100, 0]]
 
 # init
 flag = config()
 info_1, info_2, map_img = get_init()
-info_2[0:1][0:1] = np.zeros((2, 2))
 raw_map_img, bars = create_raw_map_img()
 #pdb.set_trace()
-#z# tmp
-info_2 = [[270,280,100,0], [270,310,100,0]]
+# info_tmp
+info_2 = [[270,170,100,0, 2000], [270,220,100,0, 2000]]
 norm_attack_1 = NormAttack(0, info_1, info_2)
 norm_attack_2 = NormAttack(1, info_1, info_2)
 
@@ -59,7 +55,11 @@ def step(flag, info_1, info_2=None, map_img=None, show_info=False):
     act_1_p = np.array([norm_attack_1.run(info_1, info_2), norm_attack_2.run(info_1, info_2)])
 
     act_2_p = np.zeros((2, flag.mov_num * 2 + 1), np.int64)
-    act_2_p[:, 0] = act_2_p[:, -1] = act_2_p[0, -2] = act_2_p[1, flag.mov_num] = 1
+    # enemy
+    #act_2_p[1, 5] = act_2_p[1, 16] = 0
+    act_2_p[0, 3] = act_2_p[0, 16] = 1
+    act_2_p[1, 5] = act_2_p[1, 18] = 1
+    act_2_p[0, -1] = act_2_p[1, -1] = 0
     print 'time ',time()-t
     if show_info:
         show(norm_attack_1.path_planner.way, norm_attack_2.path_planner.way, info_1, info_2)
@@ -67,22 +67,25 @@ def step(flag, info_1, info_2=None, map_img=None, show_info=False):
 
     return info_1, info_2, map_img_new
 
-def get_info():
+def get_info(data):
     return info_1, info_2
 
 
 
-def sendData(conn, info):
+def sendData(conn, info_1, info_2):
     print 'Receieve data ...'
     data = conn.recv(1024).encode('hex')
     print data
-    #pdb.set_trace()
-    #print data.split('\n')[0],len(data)#,['\r\n\r\n' in data]
-    #conn.send("server received "+ data)
+
+    #info_1 = get_info(data)
+    #info_1, info_2, r1, r2, map_img_new = step(flag, info_1, info_2, map_img, show_info=False)
+    
     print 'Send data ...'
     #pdb.set_trace()
     data = '@%03d%03d%03d%03d%%'%(info[0][0], info[0][1], info[1][0], info[1][1])
+    #data = '@%03d%03d%03d%03d%%'%(info_1[0][0], info_1[0][1], info_1[1][0], info_1[1][1])
     #struct.pack('B',int('1',16))
+
     conn.send(data)
     print data
     print 'Send Done.'
@@ -104,21 +107,11 @@ def start_tcp_server(ip, port):
     conn, addr = sock.accept()
 
     return conn
-    '''
-    while True:
-        data = conn.recv(1024)
-        print data,len(data),['\r\n\r\n' in data]
-        if not data:break
-        #conn.send("server received "+ data)
-        conn.send('@001002003004%')
-    conn.close()
-    '''
 
 if __name__ == '__main__':
-
-    conn = start_tcp_server('192.168.137.121',10001)
+    #conn = start_tcp_server('192.168.137.121',10001)
     for global_step in range(flag.steps):
         #get_info()
-        info_1, info_2, map_img = step(flag, info_1, info_2, map_img, show_info=False)
-        sendData(conn, info_1)
+        info_1, info_2, map_img = step(flag, info_1, info_2, map_img, show_info=True)
+        #sendData(conn, info_1)
         sleep(0.1)

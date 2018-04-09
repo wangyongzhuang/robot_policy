@@ -43,6 +43,6 @@ if __name__ == '__main__':
         act_1_p = np.array([norm_attack_1.run(info_1, info_2), norm_attack_2.run(info_1, info_2)])
 
         # environ and optimize
-        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
+        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img)
 
         draw_state(screen, bars, info_1, info_2)

@@ -83,6 +83,7 @@ class NormAttack:
 
         # Run state machine
         act = self.state_methods[self.cur_state](self)
+        print 'state', self.cur_state
         return act
 
     def run_start(self):
@@ -196,12 +197,12 @@ class NormAttack:
         :return: action array of this robot
         """
         if init:
-            f = lambda x, y: (np.ceil((x - y / 2) / y) - 0.5) * 2
+            f = lambda x, y: (np.ceil((x - 1.0 * y / 2) / y) - 0.5) * 2
             dst = np.array([f(self.self_position[self.self_id][0], 800) * -300 + 400,
                             f(self.self_position[self.self_id][1], 500) * -200 + 250])
             self.path_planner = PathPlanning(self.self_position[self.self_id], dst)
         elif np.linalg.norm(self.self_position[self.self_id] - self.path_planner.get_dst) < ROI_THRESH:
-            f = lambda x, y: (np.ceil((x - y / 2) / y) - 0.5) * 2
+            f = lambda x, y: (np.ceil((x - 1.0 * y / 2) / y) - 0.5) * 2
             dst = np.array([f(self.self_position[self.self_id][0], 800) * -300 + 400,
                             f(self.self_position[self.self_id][1], 500) * -200 + 250])
             self.path_planner.update_dst(dst)

@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 import random
 import pygame
@@ -775,8 +774,8 @@ def get_reward(info_1, info_2, act_1, act_2, map_img):
     #z#print 'in get_reward(), after get_state, state_1:', state_1,', state_2:',state_2
     #z#reward_1 = np.zeros([2,15])
     #z#reward_2 = np.zeros([2,15])
-    reward_1 = np.zeros([2,14])
-    reward_2 = np.zeros([2,14])
+    reward_1 = np.zeros([2,22])
+    reward_2 = np.zeros([2,22])
 
     # reward
     state_1 = [_get_reward(state_1[0], info_1[0][3], info_2[0][3], info_1[0][2]), _get_reward(state_1[1], info_1[0][3], info_2[0][3], info_1[1][2])]
@@ -919,6 +918,9 @@ def get_init():
     info_1 = [[30, 410, 2000, -1, 2000],  [30, 470, 2000, -1, 2000]]
     info_2 = [[770, 90, 2000, -1, 2000], [770, 30, 2000, -1, 2000]]
 
+    info_1 = [[30, 400, 100, 0, 2000],  [30, 470, 100, 0, 2000]]
+    info_2 = [[770, 30, 100, 0, 2000], [770, 60, 100, 0, 2000]]
+
     # Yelly test
     #info_1 = [[375, 225, 2000, -1, 200],  [375, 280, 2000, -1, 200]]
     #info_2 = [[425, 225, 2000, -1, 200], [425, 280, 2000, -1, 200]]
@@ -926,20 +928,21 @@ def get_init():
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1, act_2, map_img):
+def environ(flag, info_1, info_2, act_1_p, act_2_p, map_img):
     # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
     # Yelly modification:
     # act form changed!! [dir1_ind, dir2_ind, shoot]  e.g. [6, 0, 1]
-    #z# print 'environ(), info_1:',info_1,', info_2:',info_2, ', act_1:', act_1,', act_2:',act_2
     # state and reward
-    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img)
-    #z#print 'environ() after get_reward(), state_1:',state_1,', state_2:',state_2, ', reward_1:',reward_1,', reward_2:',reward_2
-    #pdb.set_trace()
+    act_1 = []
+    act_1.append([np.argmax(act_1_p[0,:flag.mov_num]), np.argmax(act_1_p[0,flag.mov_num:2*flag.mov_num]), 0])
+    act_1.append([np.argmax(act_1_p[1,:flag.mov_num]), np.argmax(act_1_p[1,flag.mov_num:2*flag.mov_num]), 0])
 
-    #print '\nstate:'
-    #print state_1
-    #print state_2
+    act_2 = []
+    act_2.append([np.argmax(act_2_p[0,:flag.mov_num]), np.argmax(act_2_p[0,flag.mov_num:2*flag.mov_num]), 0])
+    act_2.append([np.argmax(act_2_p[1,:flag.mov_num]), np.argmax(act_2_p[1,flag.mov_num:2*flag.mov_num]), 0])
+
+    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img)
 
     # new info and map
     # Yelly modification:

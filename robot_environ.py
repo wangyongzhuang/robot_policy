@@ -2,10 +2,12 @@ import tensorflow as tf
 import numpy as np
 import random
 import pygame
+import copy
 import pdb
 scale = 0.1
 robot_size = [int(500*scale), int(500*scale)]
-act_dict = [-12, -8, -4, 0, 4, 8, 12]
+#z# act_dict = [-12, -8, -4, 0, 4, 8, 12]
+act_dict = [-12, -8, -4, -2, -1, 0, 1, 2, 4, 8, 12]
 d_size = [_/2 for _ in robot_size]
 # Yelly addition:
 # bonus-related
@@ -24,7 +26,8 @@ bonus_steps = bonus_time / time_slice # how many continuous steps to take until 
 # reward related
 reward_a = 6.0/(4.0 + 2)
 reward_b = 75.0/(4.0 + 2)
-reward_c = -2.0/(1.0 + 2) # notice: this is negative coefficent
+#reward_c = -2.0/(1.0 + 2) # notice: this is negative coefficent
+reward_c = 0
 
 def _sign(x):
     if x>=0:
@@ -69,7 +72,7 @@ def create_raw_map_img():
 # Yelly modification: make these invariables global variables and 
 # eliminating all these parameters to functions in this file
 raw_map_img, bars = create_raw_map_img()
-print 'in robot_environ.py, raw_amp_img initilized'
+#print 'in robot_environ.py, raw_amp_img initilized'
 
 def draw_pos_tool(pos, color, map_img):
     for i in range(pos[0]-d_size[0], pos[0]+d_size[0]):
@@ -292,7 +295,7 @@ def move_detect_robot_collide(pos_pre_1, pos_pre_2, dir_1, dir_2):
                 #collide = False
                 return False, dir_1, dir_2
 
-    print '[ERROR]move_detect_robot_collide function has unhandled case!'
+    #print '[ERROR]move_detect_robot_collide function has unhandled case!'
     return False, dir_1, dir_2
 
 # Yelly comment: previously dir_new unused. Yelly modified this
@@ -317,15 +320,15 @@ def move_detect_wall_collide(pos_pre, dir):
         dir_new[1] = (int(scale*5000)-1) - d_size[1] - pos_pre[1] # positive
 
     # bar
-    print 'move to:', [pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])],
+    #print 'move to:', [pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])],
 
-    #print sum(raw_map_img[pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]]), sum(raw_map_img[pos_pre[0], pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])])
-    print 'dir_inside_bound',dir_new,
+    ##print sum(raw_map_img[pos_pre[0]+_sign(dir_new[0])*(abs(dir_new[0])+d_size[0]), pos_pre[1]]), sum(raw_map_img[pos_pre[0], pos_pre[1]+_sign(dir_new[1])*(abs(dir_new[1])+d_size[1])])
+    #print 'dir_inside_bound',dir_new,
 
     # Yelly modification:
     # _move_tools() function returns dir_new
     dir_new = _move_tool(pos_pre, dir_new)
-    print 'dir_new',dir_new
+    #print 'dir_new',dir_new
     return dir_new
 
 ''' 
@@ -345,19 +348,49 @@ def shoot(pos, target, state_1, state_2, map_img):
     return True, state_1, state_2
 '''
 
+def isLine(pos, tar, map_img):
+    #z# added by z
+    for tmp_x in range(pos[0]+d_size[0], tar[0]-d_size[0]):
+        tmp_y = pos[1] + int(1.0 * (tar[1]-pos[1]) / (tar[0]-pos[0]) * (tmp_x - pos[0]))
+        if sum(map_img[tmp_x, tmp_y]) < 2 * 255:
+            return 0
+    return 1
+
 # Yelly addition:
 # At present return value could only be 0 or 1 for simplicity, 
 # it is feasible to introduce hit rate calculation from visual module to this function 
 def hitRate(pos, target, map_img):
     dx   = int(robot_size[0]/10)
     dy   = int(robot_size[0]/10) # Yelly comment: should be robot_size[1]/10 ?
+    '''z
     targets = [[target[0]+dx, target[1]+dy], [target[0]+dx, target[1]-dy], [target[0]-dx, target[1]+dy], [target[0]-dx, target[1]-dy]]
     for tar in targets:
-        for tmp_x in range(pos[0], tar[0]):
-            tmp_y = pos[1] + int((tar[1]-pos[1])/(tar[0]-pos[0])) * (tmp_x-pos[0])
-            if sum(map_img[tmp_x, tmp_y]) < 2 * 255:
-                return 0
+        if tar[0] > pos[0]:
+            for tmp_x in range(pos[0]+d_size[0], tar[0]-d_size[0]):
+                tmp_y = pos[1] + int((tar[1]-pos[1])/(tar[0]-pos[0])) * (tmp_x-pos[0])
+                #print 'in hitRate(), for tar:',tar,', tmp_x:',tmp_x,', tmp_y:',tmp_y
+                if sum(map_img[tmp_x, tmp_y]) < 2 * 255:
+                    #z#print 'in hitRate(), map_img[',tmp_x,',',tmp_y,']=',map_img[tmp_x,tmp_y]
+                    return 0
+        else:
+            for tmp_x in range(tar[0]+d_size[0], pos[0]-d_size[0]):
+                tmp_y = pos[1] + int((tar[1]-pos[1])/(tar[0]-pos[0])) * (tmp_x-tar[0])
+                #print 'in hitRate(), for tar:',tar,', tmp_x:',tmp_x,', tmp_y:',tmp_y
+                if sum(map_img[tmp_x, tmp_y]) < 2 * 255:
+                    #z#print 'in hitRate(), map_img[',tmp_x,',',tmp_y,']=',map_img[tmp_x,tmp_y]
+                    return 0
+    pdb.set_trace()
     return 1
+    '''
+    #z# add target
+    rate = 0
+    targets = [[target[0]+dx, target[1]+dy], [target[0]+dx, target[1]-dy], [target[0]-dx, target[1]+dy], [target[0]-dx, target[1]-dy], target]
+    for tar in targets:
+        if tar[0] > pos[0]:
+            rate += isLine(pos, tar, map_img)
+        else:
+            rate += isLine(tar, pos, map_img)
+    return int(rate>0)
 
 # Yelly addition:
 # usage: shootAt(info_1[:][:2], info_2[:][:2], state_1, state_2, map_img)    
@@ -376,6 +409,7 @@ def shootAt(source_pos, target_pos, source_state, target_state, map_img):
         hit_rate_11 = hitRate(source_pos[1], target_pos[1], map_img)
 
 
+    #z#print 'hit_rate_00:', hit_rate_00,', hit_rate_01:',hit_rate_01,', hit_rate_10:', hit_rate_10,', hit_rate_11:',hit_rate_11
     # shooting from source robot 0
 
     # assuming visual module will choose to shoot the target with higher hit rate
@@ -436,16 +470,16 @@ def shootAt(source_pos, target_pos, source_state, target_state, map_img):
 
 
 # Yelly comment: [TODO] action selection (according to policy) should be put into agent logic
-def get_action(act, hp, proj_num, policy='MAX'):
+def get_action(act, hp, proj_num):
     # prevent dead robots from action
     if hp <= 0:
         return [0, 0, 0]
 
-    if policy=='MAX':
-        if proj_num > 0:
-            return [act_dict[act[0]], act_dict[act[1]], act[-1]]
-        else:
-            return [act_dict[act[0]], act_dict[act[1]], 0]
+    if proj_num > 0:
+        return [act_dict[act[0]], act_dict[act[1]], act[-1]]
+    else:
+        return [act_dict[act[0]], act_dict[act[1]], 0]
+
     #return [act_dict[random.randint(0,6)], act_dict[random.randint(0,6)], act_dict[random.randint(0,1)]]
     if proj_num > 0:
         # Yelly modification: value of act[-1] should be 0 or 1
@@ -455,15 +489,17 @@ def get_action(act, hp, proj_num, policy='MAX'):
         return [act_dict[0], act_dict[0], 0]
 
 
-def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
+def get_state(info_1, info_2, act_1, act_2, map_img):
     # get state[x,y,dx,dy,shoot,hit,shooted,WallCollide,TeamCollide,AICollide]
     state_1 = []
     state_2 = []
     # Yelly modification: 
     # 1. pass hp info to get_action function to prevent dead robots from action
     # 2. pass projectile cnt to get_action function to prevent robot with no projectile from shooting
-    act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4], policy=policy), get_action(act_1[1], info_1[1][2], info_1[1][4], policy=policy)]
-    act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4], policy=policy), get_action(act_2[1], info_2[1][2], info_2[1][4], policy=policy)]
+    act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4]), get_action(act_1[1], info_1[1][2], info_1[1][4])]
+    act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4]), get_action(act_2[1], info_2[1][2], info_2[1][4])]
+    #z#print 'act_1',act_1
+    #z#print 'act_2',act_2
     
 
     # move:[dx,dy]
@@ -480,46 +516,56 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
         dir_tmp = move_detect_wall_collide(info_1[0][:2], act_1[0][:2])
         state_1.append({'x':info_1[0][0], 'y':info_1[0][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
         if ( not dir_tmp[0] == act_1[0][0] or not dir_tmp[1] == act_1[0][1]):
-            print 'robot 0 of team 1 collide detected',
-            print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[0][0]='+str(act_1[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[0][1]='+str(act_1[0][1])
-            state_1[0]['WallCollide'] = True
+            #print 'robot 0 of team 1 collide detected',
+            #print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[0][0]='+str(act_1[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[0][1]='+str(act_1[0][1])
+            state_1[-1]['WallCollide'] = True
         else:
-            state_1[0]['WallCollide'] = False
+            state_1[-1]['WallCollide'] = False
+    else:
+        state_1.append({'x':info_1[0][0], 'y':info_1[0][1], 'dx':0, 'dy':0, 'WallCollide':False})
+
     if info_1[1][2] > 0:
         dir_tmp = move_detect_wall_collide(info_1[1][:2], act_1[1][:2])
         state_1.append({'x':info_1[1][0], 'y':info_1[1][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
         if ( not dir_tmp[0] == act_1[1][0] or not dir_tmp[1] == act_1[1][1]):
-            print 'robot 1 of team 1 collide detected',
-            print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[1][0]='+str(act_1[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[1][1]='+str(act_1[1][1])
-            state_1[1]['WallCollide'] = True
+            #print 'robot 1 of team 1 collide detected',
+            #print 'dir_tmp[0]='+str(dir_tmp[0])+',act_1[1][0]='+str(act_1[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_1[1][1]='+str(act_1[1][1])
+            state_1[-1]['WallCollide'] = True
         else:
-            state_1[1]['WallCollide'] = False
+            state_1[-1]['WallCollide'] = False
+    else:
+        state_1.append({'x':info_1[1][0], 'y':info_1[1][1], 'dx':0, 'dy':0, 'WallCollide':False})
 
     if info_2[0][2] > 0:
         dir_tmp = move_detect_wall_collide(info_2[0][:2], act_2[0][:2])
         state_2.append({'x':info_2[0][0], 'y':info_2[0][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
         if ( not dir_tmp[0] == act_2[0][0] or not dir_tmp[1] == act_2[0][1]):
-            print 'robot 0 of team 2 collide detected',
-            print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[0][0]='+str(act_2[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[0][1]='+str(act_2[0][1])
-            state_2[0]['WallCollide'] = True
+            #print 'robot 0 of team 2 collide detected',
+            #print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[0][0]='+str(act_2[0][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[0][1]='+str(act_2[0][1])
+            state_2[-1]['WallCollide'] = True
         else:
-            state_2[0]['WallCollide'] = False
+            state_2[-1]['WallCollide'] = False
+    else:
+        state_2.append({'x':info_2[0][0], 'y':info_2[0][1], 'dx':0, 'dy':0, 'WallCollide':False})
+
     if info_2[0][2] > 0:
         dir_tmp = move_detect_wall_collide(info_2[1][:2], act_2[1][:2])
         state_2.append({'x':info_2[1][0], 'y':info_2[1][1], 'dx':dir_tmp[0], 'dy':dir_tmp[1]})
         if ( not dir_tmp[0] == act_2[1][0] or not dir_tmp[1] == act_2[1][1]):
-            print 'robot 1 of team 2 collide detected',
-            print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[1][0]='+str(act_2[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[1][1]='+str(act_2[1][1])
-            state_2[1]['WallCollide'] = True
+            #print 'robot 1 of team 2 collide detected',
+            #print 'dir_tmp[0]='+str(dir_tmp[0])+',act_2[1][0]='+str(act_2[1][0])+',dir_tmp[1]='+str(dir_tmp[1])+',act_2[1][1]='+str(act_2[1][1])
+            state_2[-1]['WallCollide'] = True
         else:
-            state_2[1]['WallCollide'] = False
+            state_2[-1]['WallCollide'] = False
+    else:
+        state_2.append({'x':info_2[1][0], 'y':info_2[1][1], 'dx':0, 'dy':0, 'WallCollide':False})
 
     # [TODO] cases where one of two robots is dead
     # TeamCollide
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_1[1][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_1[1]['dx'], state_1[1]['dy']])
     if (collide):
-        print 'team 1 robots (prev pos = ', [info_1[0][0], info_1[0][1]], [info_1[1][0], info_1[1][1]], ') collide with each other, change dir from ',
-        print [state_1[0]['dx'], state_1[0]['dy']], [state_1[1]['dx'], state_1[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 1 robots (prev pos = ', [info_1[0][0], info_1[0][1]], [info_1[1][0], info_1[1][1]], ') collide with each other, change dir from ',
+        #print [state_1[0]['dx'], state_1[0]['dy']], [state_1[1]['dx'], state_1[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_1[0]['TeamCollide'] = True
         state_1[1]['TeamCollide'] = True
         state_1[0]['dx'] = dir_tmp_1[0]
@@ -532,8 +578,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
 
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_2[0][:2], info_2[1][:2], [state_2[0]['dx'], state_2[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
     if (collide):
-        print 'team 2 robots (prev pos = ', [info_2[0][0], info_2[0][1]], [info_2[1][0], info_2[1][1]], ') collide with each other, change dir from ',
-        print [state_2[0]['dx'], state_2[0]['dy']], [[state_2[1]['dx']], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 2 robots (prev pos = ', [info_2[0][0], info_2[0][1]], [info_2[1][0], info_2[1][1]], ') collide with each other, change dir from ',
+        #print [state_2[0]['dx'], state_2[0]['dy']], [[state_2[1]['dx']], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_2[0]['TeamCollide'] = True
         state_2[1]['TeamCollide'] = True
         state_2[0]['dx'] = dir_tmp_1[0]
@@ -547,8 +593,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
     # AICollide
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_2[0][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_2[0]['dx'], state_2[0]['dy']])
     if (collide):
-        print 'team 1 robot 0 collide with team 2 robot 0, change dir from ',
-        print [state_1[0]['dx'], state_1[0]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 1 robot 0 collide with team 2 robot 0, change dir from ',
+        #print [state_1[0]['dx'], state_1[0]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_1[0]['AICollide'] = True
         state_2[0]['AICollide'] = True
         state_1[0]['dx'] = dir_tmp_1[0]
@@ -561,8 +607,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
 
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[0][:2], info_2[1][:2], [state_1[0]['dx'], state_1[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
     if (collide):
-        print 'team 1 robot 0 collide with team 2 robot 1, change dir from ',
-        print [state_1[0]['dx'], state_1[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 1 robot 0 collide with team 2 robot 1, change dir from ',
+        #print [state_1[0]['dx'], state_1[0]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_1[0]['AICollide'] = True
         state_2[1]['AICollide'] = True
         state_1[0]['dx'] = dir_tmp_1[0]
@@ -575,8 +621,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
 
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[1][:2], info_2[0][:2], [state_1[1]['dx'], state_1[1]['dy']], [state_2[0]['dx'], state_2[0]['dy']])
     if (collide):
-        print 'team 1 robot 1 collide with team 2 robot 0, change dir from ',
-        print [state_1[1]['dx'], state_1[1]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 1 robot 1 collide with team 2 robot 0, change dir from ',
+        #print [state_1[1]['dx'], state_1[1]['dy']], [state_2[0]['dx'], state_2[0]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_1[1]['AICollide'] = True
         state_2[0]['AICollide'] = True
         state_1[1]['dx'] = dir_tmp_1[0]
@@ -589,8 +635,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
 
     collide, dir_tmp_1, dir_tmp_2 = move_detect_robot_collide(info_1[1][:2], info_2[1][:2], [state_1[1]['dx'], state_1[1]['dy']], [state_2[1]['dx'], state_2[1]['dy']])
     if (collide):
-        print 'team 1 robot 1 collide with team 2 robot 1, change dir from ',
-        print [state_1[1]['dx'], state_1[1]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
+        #print 'team 1 robot 1 collide with team 2 robot 1, change dir from ',
+        #print [state_1[1]['dx'], state_1[1]['dy']], [state_2[1]['dx'], state_2[1]['dy']], ' to ', dir_tmp_1, dir_tmp_2
         state_1[1]['AICollide'] = True
         state_2[1]['AICollide'] = True
         state_1[1]['dx'] = dir_tmp_1[0]
@@ -679,7 +725,14 @@ def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt, hp):
         return state
 
     # move
-    state['reward'] = 3 + np.sqrt((state['x']+state['dx']-4000*scale)**2 + (state['y']+state['dy']-2500*scale)**2) - np.sqrt((state['x']-4000*scale)**2 + (state['y']-2500*scale)**2)
+    #z#state['reward'] = 3 + np.sqrt((state['x']+state['dx']-4000*scale)**2 + (state['y']+state['dy']-2500*scale)**2) - np.sqrt((state['x']-4000*scale)**2 + (state['y']-2500*scale)**2)
+    state['reward'] = (- np.sqrt((state['x']+state['dx']-4000*scale)**2 + (state['y']+state['dy']-2500*scale)**2) + np.sqrt((state['x']-4000*scale)**2 + (state['y']-2500*scale)**2)) * 3
+    '''z
+    print 'x:',state['x'],'to',state['x']+state['dx'],'targ',4000*scale
+    print 'y:',state['y'],'to',state['y']+state['dy'],'targ',2500*scale
+    print 'reward', state['reward']
+    '''
+    #pdb.set_trace()
 
     # shoot, hit or shooted
     if state['hit']:
@@ -705,43 +758,59 @@ def _get_reward(state, my_bonus_cnt, oppo_bonus_cnt, hp):
     #wall_collide_reward = -15 # configurable, Yelly make it no less than the max move reward I may get
     #team_collide_reward = -10 # configurable, Yelly make it a little less than wall_collide_reward
     #ai_collide_reward = 0 # configurable, Yelly set it 0 here, because there's no obvious damage caused by run into opponent (I heard that our robots will be even stronger than DJI robots). However, if the distance is too small hit rate might decrease.
+    '''z
     if state['WallCollide']:
         state['reward'] += -15.
     if state['TeamCollide']:
         state['reward'] += -10.
+    '''
     #if state['AICollide']:
     #    state['reward'] += 0.
 
     return state
 
-def get_reward(info_1, info_2, act_1, act_2, map_img, policy='MAX'):
+def get_reward(info_1, info_2, act_1, act_2, map_img):
     # init
-    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, map_img,  policy=policy)
-    reward_1 = np.zeros([2,15])
-    reward_2 = np.zeros([2,15])
+    state_1, state_2 = get_state(info_1, info_2, act_1, act_2, map_img)
+    #z#print 'in get_reward(), after get_state, state_1:', state_1,', state_2:',state_2
+    #z#reward_1 = np.zeros([2,15])
+    #z#reward_2 = np.zeros([2,15])
+    reward_1 = np.zeros([2,14])
+    reward_2 = np.zeros([2,14])
 
     # reward
     state_1 = [_get_reward(state_1[0], info_1[0][3], info_2[0][3], info_1[0][2]), _get_reward(state_1[1], info_1[0][3], info_2[0][3], info_1[1][2])]
+    #z# print 'in get_reward(), after _get_reward, state_1:', state_1
     state_2 = [_get_reward(state_2[0], info_2[0][3], info_1[0][3], info_2[0][2]), _get_reward(state_2[1], info_2[0][3], info_1[0][3], info_2[1][2])]
+    #z# print 'in get_reward(), after _get_reward, state_2:', state_2
 
     reward_1[0,act_1[0][0]] = state_1[0]['reward']
     reward_1[0,act_1[0][1]+7] = state_1[0]['reward']
+    '''z
     if state_1[0]['hit']:
         reward_1[0,-1] = state_1[0]['reward']
+    '''
     reward_1[1,act_1[0][0]] = state_1[1]['reward']
     reward_1[1,act_1[0][1]+7] = state_1[1]['reward']
+    '''z
     if state_1[1]['hit']:
         reward_1[1,-1] = state_1[1]['reward']
+    '''
 
     reward_2[0,act_2[0][0]] = state_2[0]['reward']
     reward_2[0,act_2[0][1]+7] = state_2[0]['reward']
+    '''z
     if state_2[0]['hit']:
         reward_2[0,-1] = state_2[0]['reward']
+    '''
     reward_2[1,act_2[0][0]] = state_2[1]['reward']
     reward_2[1,act_2[0][1]+7] = state_2[1]['reward']
+    '''z
     if state_2[1]['hit']:
         reward_2[1,-1] = state_2[1]['reward']
+    '''
 
+    #z#print 'in get_reward(), just before return, state_1:', state_1,', state_2: ',state_2,', reward_1: ',reward_1,', reward_2:',reward_2
     return state_1, state_2, reward_1, reward_2
 
 # Yelly addition:
@@ -774,6 +843,8 @@ def inside_bonus_zone(pos):
 # let this function compute new infos for two robots of one side
 # because info[3] (buff) values of the two robots correlate
 def get_new_info(info_pre, state):
+    #z# DEEPCOPY!!!!!!!!
+    info_pre = copy.deepcopy(info_pre)
     # robot 0 info[:3]
     info_pre[0][0] += state[0]['dx']
     info_pre[0][1] += state[0]['dy']
@@ -843,27 +914,32 @@ def get_init():
     # 	which indicate that bonus got
     # 2. change initial HP value to 2000
     # 3. added projectile info: initial projectile number: 200 for each roobt
-    #info_1 = [[30, 420, 2000, -1, 200],  [30, 470, 2000, -1, 200]]
-    #info_2 = [[770, 420, 2000, -1, 200], [770, 470, 2000, -1, 200]]
+    #z#info_1 = [[30, 420, 2000, -1, 200],  [30, 470, 2000, -1, 200]]
+    #z#info_2 = [[770, 420, 2000, -1, 200], [770, 470, 2000, -1, 200]]
+    info_1 = [[30, 410, 2000, -1, 2000],  [30, 470, 2000, -1, 2000]]
+    info_2 = [[770, 90, 2000, -1, 2000], [770, 30, 2000, -1, 2000]]
 
     # Yelly test
-    info_1 = [[375, 225, 2000, -1, 200],  [375, 280, 2000, -1, 200]]
-    info_2 = [[425, 225, 2000, -1, 200], [425, 280, 2000, -1, 200]]
+    #info_1 = [[375, 225, 2000, -1, 200],  [375, 280, 2000, -1, 200]]
+    #info_2 = [[425, 225, 2000, -1, 200], [425, 280, 2000, -1, 200]]
 
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1, act_2, map_img, policy='MAX'):
+def environ(flag, info_1, info_2, act_1, act_2, map_img):
     # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
-
+    # Yelly modification:
+    # act form changed!! [dir1_ind, dir2_ind, shoot]  e.g. [6, 0, 1]
+    #z# print 'environ(), info_1:',info_1,', info_2:',info_2, ', act_1:', act_1,', act_2:',act_2
     # state and reward
-    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img, policy=policy)
+    state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img)
+    #z#print 'environ() after get_reward(), state_1:',state_1,', state_2:',state_2, ', reward_1:',reward_1,', reward_2:',reward_2
     #pdb.set_trace()
 
-    print '\nstate:'
-    print state_1
-    print state_2
+    #print '\nstate:'
+    #print state_1
+    #print state_2
 
     # new info and map
 

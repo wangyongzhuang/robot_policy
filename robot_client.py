@@ -17,7 +17,7 @@ BLUE  = [0, 0, 255]
 # Yelly modification: with the global variable 'bars' initializaed by create_raw_map_img(), 
 # no need to pass bars as parameter to functions in this file.
 
-def draw_init(screen):
+def draw_init(screen, bars):
     screen.fill([255,255,255])
 
     for i in range(len(bars)):

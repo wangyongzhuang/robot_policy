@@ -5,14 +5,14 @@ from robot_config import *
 from robot_environ import *
 from robot_model import cnn
 from robot_client import *
-from robot_agent import *
 
 import pdb
 
 pygame.init()
 screen = pygame.display.set_mode((800, 500), 0, 32)
+raw_map_img, bars = create_raw_map_img()
 flag = config()
-draw_init(screen) # Yelly deleted the parameter 'bars' as robot_client has this variable already
+draw_init(screen, bars)
 
 # model
 with tf.variable_scope('cnn_1') as scope:
@@ -25,7 +25,6 @@ r_1 = tf.placeholder(dtype=tf.float32, shape=[2, 2*flag.mov_num+1])
 r_2 = tf.placeholder(dtype=tf.float32, shape=[2, 2*flag.mov_num+1])
 
 # loss, policy-based
-# without not shoot reward
 loss = tf.reduce_mean((-1 * tf.log(cnn_1.q_p + 1e-8) * r_1) + (-1 * tf.log(cnn_2.q_p + 1e-8) * r_2))
 
 
@@ -45,23 +44,18 @@ sess.run(tf.global_variables_initializer())
 # train
 info_1, info_2, map_img = get_init()
 for global_step in range(flag.steps):
-    # Yelly modification:
-    # round is over when two robots of one side both have 0 HP
-    if global_step%300==0 or (info_1[0][2] == 0 and info_1[1][2] == 0) or (info_2[0][2] == 0 and info_2[1][2] == 0):
+    if global_step%1000==0:
         info_1, info_2, map_img = get_init()
     act_1_p, act_2_p = sess.run([cnn_1.q_p, cnn_2.q_p], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img})
 
     # environ and optimize
-    if global_step%10==0:
-        info_1, info_2, r1, r2, map_img_new, state_1, state_2 = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
+    if global_step%2==0:
+        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
     else:
-        info_1, info_2, r1, r2, map_img_new, state_1, state_2 = agent(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='RANDOM')
-
-    draw_state(screen, bars, state_1, state_2, info_1, info_2)
+        info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, raw_map_img, policy='MAX')
 
     _, l = sess.run([optimizer, loss], feed_dict={cnn_1.data:map_img, cnn_2.data:map_img, r_1:r1, r_2:r2})
 
-    print 'Itr_%d loss: %0.3f'%(global_step, l)
+    print('Itr_%d loss: %0.3f'%(global_step, l))
 
-    draw_info(screen, bars, info_1, info_2)
-    pygame.time.delay(100)
+    draw_state(screen, bars, info_1, info_2)

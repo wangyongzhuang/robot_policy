@@ -274,13 +274,16 @@ class PathPlanning:
         :return: a movement in two directions
         """
         self.cur_pos = cur_pos
-
         if self.process is None and strategy == 'a-star':
             #self.q_get = Queue()
             #self.q_feed = Queue()
             self.process = Process(target=self.a_star_process)
             self.process.start()
             self.q_feed.put((tuple(self.cur_pos), tuple(self.dst_pos), weight_map))
+        '''
+        way = self._a_star(tuple(self.cur_pos), tuple(self.dst_pos), weight_map)
+        self.q_get.put(way)
+        '''
 
         '''
         print('*', self.cur_pos)
@@ -300,16 +303,40 @@ class PathPlanning:
 
     # TODO: Try maybe Dijkstra
 
+def draw(cur_pos,dst_pos,way,img):
+    img = img.copy()
+    img[cur_pos[0]-25:cur_pos[0]+25, cur_pos[1]-25:cur_pos[1]+25] = np.array([0,255,0], np.uint8)
+    img[dst_pos[0]-25:dst_pos[0]+25, dst_pos[1]-25:dst_pos[1]+25] = np.array([255,0,0], np.uint8)
+    for i,w in enumerate(way):
+        img[w[0]-5:w[0]+5, w[1]-5:w[1]+5] = np.array([0,120,0], np.uint8)
+    img = img.transpose((1, 0, 2))
+    plt.imshow(img)
+    plt.show()
 
 if __name__ == '__main__':
     import os
 
-    cur_pos = np.array([30, 30])
-    dst_pos = np.array([120, 30])
+    cur_pos = np.array([95, 450])
+    dst_pos = np.array([270, 340])
     pp = PathPlanning(cur_pos, dst_pos)
 
-    weight_map = 255 * np.ones((500, 800, 3), np.int16)
-    weight_map[60:80, 0:30, :] = 0
+    weight_map = 255 * np.ones((800, 500, 3), np.uint8)
+    
+    # bar_1
+    weight_map[int(scale*1200):int(scale*2000), int(scale*1000):int(scale*1300), :] = 0
+    weight_map[int(scale*6000):int(scale*6800), int(scale*3700):int(scale*4000), :] = 0
+
+    # bar_2
+    weight_map[int(scale*0):int(scale*800), int(scale*2500):int(scale*2800), :] = 0
+    weight_map[int(scale*7200):int(scale*8000), int(scale*2200):int(scale*2500), :] = 0
+
+    # bar_3
+    weight_map[int(scale*1800):int(scale*2100), int(scale*2300):int(scale*3500), :] = 0
+    weight_map[int(scale*5900):int(scale*6200), int(scale*1500):int(scale*2700), :] = 0
+
+    # bar_4
+    weight_map[int(scale*3100):int(scale*3400), int(scale*3000):int(scale*5000), :] = 0
+    weight_map[int(scale*4600):int(scale*4900), int(scale*0):int(scale*2000), :] = 0
 
     dict_len = len(act_dict)
 
@@ -319,6 +346,7 @@ if __name__ == '__main__':
         dp = act_dict[np.argmax(dp[0: dict_len])], act_dict[np.argmax(dp[dict_len: 2 * dict_len])]
         cur_pos += dp
         print('cur pos {} to {}, time {:.2f}'.format(cur_pos, dst_pos, time.time() - t))
+        draw(cur_pos,dst_pos,pp.way,weight_map)
         time.sleep(1)
     print('STOP!')
     os._exit(0)

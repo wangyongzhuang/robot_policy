@@ -9,11 +9,10 @@ import struct
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time, sleep
-import serial
 
 from robot_config import *
 from robot_environ import *
-#z# from robot_client import *
+from robot_client import *
 
 from state_machines.norm_attack import NormAttack
 
@@ -26,7 +25,7 @@ info_1, info_2, map_img = get_init()
 raw_map_img, bars = create_raw_map_img()
 #pdb.set_trace()
 # info_tmp
-info_2 = [[270,170,100,0, 2000], [270,220,100,0, 2000]]
+info_2 = [[270,280,100,0, 2000], [270,330,100,0, 2000]]
 norm_attack_1 = NormAttack(0, info_1, info_2)
 norm_attack_2 = NormAttack(1, info_1, info_2)
 
@@ -60,7 +59,8 @@ def step(flag, info_1, info_2=None, map_img=None, show_info=False):
     act_2_p[0, 3] = act_2_p[0, 16] = 1
     act_2_p[1, 5] = act_2_p[1, 18] = 1
     act_2_p[0, -1] = act_2_p[1, -1] = 0
-    print 'time ',time()-t
+    #print 'time ',time()-t
+    print 'info', info_1[0][:2], info_1[1][:2]
     if show_info:
         show(norm_attack_1.path_planner.way, norm_attack_2.path_planner.way, info_1, info_2)
     info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, map_img)
@@ -110,8 +110,12 @@ def start_tcp_server(ip, port):
 
 if __name__ == '__main__':
     #conn = start_tcp_server('192.168.137.121',10001)
+    #screen = pygame.display.set_mode((1200, 500), 0, 32)
+    raw_map_img, bars = create_raw_map_img()
     for global_step in range(flag.steps):
         #get_info()
         info_1, info_2, map_img = step(flag, info_1, info_2, map_img, show_info=True)
         #sendData(conn, info_1)
-        sleep(0.1)
+        sleep(0.5)
+        #pdb.set_trace()
+        #draw_info(screen, bars, info_1, info_2, raw_map_img)

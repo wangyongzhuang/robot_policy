@@ -7,10 +7,8 @@ robot_size = [int(500*scale), int(500*scale)]
 pygame.init()
 screen = pygame.display.set_mode((800, 500), 0, 32)
 
-# Yelly modification: with the global variable 'bars' initializaed by create_raw_map_img(), 
-# no need to pass bars as parameter to functions in this file.
 
-def draw_init(screen):
+def draw_init(screen, bars):
     screen.fill([255,255,255])
 
     for i in range(len(bars)):
@@ -22,8 +20,8 @@ def draw_robot(screen, pos, color=[255,0,0]):
     rect = [pos[0]-robot_size[0]/2, pos[1]-robot_size[1]/2, robot_size[0], robot_size[1]]
     pygame.draw.rect(screen, color, rect, 0)
 
-def draw_state(screen, info_1, info_2):
-    draw_init(screen)
+def draw_state(screen, bars, info_1, info_2):
+    draw_init(screen, bars)
 
     draw_robot(screen, info_1[0][:2], [255,0,0])
     draw_robot(screen, info_1[1][:2], [255,0,0])

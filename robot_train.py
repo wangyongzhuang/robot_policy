@@ -9,7 +9,8 @@ from robot_client import *
 import pdb
 
 pygame.init()
-screen = pygame.display.set_mode((800, 500), 0, 32)
+# screen = pygame.display.set_mode((800, 500), 0, 32)
+screen = pygame.display.set_mode((1200, 500), 0, 32)
 raw_map_img, bars = create_raw_map_img()
 flag = config()
 draw_init(screen, bars)
@@ -58,4 +59,5 @@ for global_step in range(flag.steps):
 
     print('Itr_%d loss: %0.3f'%(global_step, l))
 
-    draw_state(screen, bars, info_1, info_2)
+    draw_info(screen, bars, info_1, info_2)
+    pygame.time.delay(100)

@@ -119,7 +119,7 @@ if __name__ == '__main__':
         print('step {} cur pos {} to {}, time {:.2f}'.format(step, cur_pos, dst_pos, time() - t))
         #draw(cur_pos,dst_pos=dst_pos,enemy_pos=enemy_pos.tolist(),way=pp.way,img=raw_map_img)
         draw_info_z(screen, bars, re(cur_pos,100), re(enemy_pos,blood), raw_map_img, dst_pos, pp.way)
-        sleep(0.01)
+        sleep(0.02)
 
     cur_pos = dst_pos
     step = 0
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         cur_pos += dp
         #draw(cur_pos,dst_pos=dst_pos1,enemy_pos=enemy_pos.tolist(),way=pp1.way,img=raw_map_img)
         draw_info_z(screen, bars, re(cur_pos,100), re(enemy_pos,blood), raw_map_img, dst_pos1, pp1.way)
-        sleep(0.01)
+        sleep(0.02)
         print('step {} cur pos {} to {}, time {:.2f}'.format(step, cur_pos, dst_pos1, time() - t))
 
     step = 0
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             blood -= 1
         #draw(cur_pos,dst_pos=enemy_pos,enemy_pos=enemy_pos.tolist(),way=pp2.way,img=raw_map_img)
         draw_info_z(screen, bars, re(cur_pos,100), re(enemy_pos,blood), raw_map_img, enemy_pos, pp2.way)
-        sleep(0.01)
+        sleep(0.02)
         print('step {} cur pos {} , time {:.2f}'.format(step, cur_pos, time() - t))
 
     step = 0
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         cur_pos += dp
         #draw(cur_pos,dst_pos=pp31_pos,enemy_pos=enemy_pos.tolist(),way=pp3.way,img=raw_map_img)
         draw_info_z(screen, bars, re(cur_pos,100), re(enemy_pos,blood), raw_map_img, pp31_pos, pp3.way)
-        sleep(0.01)
+        sleep(0.02)
         print('step {} cur pos {}, time {:.2f}'.format(step, cur_pos, time() - t))
 
     print('STOP!')
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         info_1, info_2, map_img = step(flag, info_1, info_2, map_img, show_info=True)
         print 'step ',global_step
         #sendData(conn, info_1)
-        #sleep(0.01)
+        #sleep(0.02)
         #pdb.set_trace()
         #draw_info(screen, bars, info_1, info_2, raw_map_img)
     '''

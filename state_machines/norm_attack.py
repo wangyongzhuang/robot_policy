@@ -83,8 +83,6 @@ class NormAttack:
 
         # Run state machine
         act = self.state_methods[self.cur_state](self)
-        #print 'state', self.cur_state
-        #print 'target_moving', self.target_is_moving
         return act
 
     def run_start(self):
@@ -235,7 +233,6 @@ class NormAttack:
         self.path_planner.update_dst(self.enemy_position[self.target_id])
         weight_map = self.get_weight_map()
         act = self.path_planner.run(self.self_position[self.self_id], STEP_LEN, weight_map, strategy='a-star')
-        print 'self_pos', self.self_position[self.self_id]
         if np.fmin(dist0, dist1) < PURSUIT_SHOT_DIST:
             act[-1] = 1
         return act

@@ -515,8 +515,8 @@ def get_state(info_1, info_2, act_1, act_2, map_img):
     # Yelly modification: 
     # 1. pass hp info to get_action function to prevent dead robots from action
     # 2. pass projectile cnt to get_action function to prevent robot with no projectile from shooting
-    act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4]), get_action(act_1[1], info_1[1][2], info_1[1][4])]
-    act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4]), get_action(act_2[1], info_2[1][2], info_2[1][4])]
+    #act_1 = [get_action(act_1[0], info_1[0][2], info_1[0][4]), get_action(act_1[1], info_1[1][2], info_1[1][4])]
+    #act_2 = [get_action(act_2[0], info_2[0][2], info_2[0][4]), get_action(act_2[1], info_2[1][2], info_2[1][4])]
     #z#print 'act_1',act_1
     #z#print 'act_2',act_2
     
@@ -948,12 +948,13 @@ def get_init():
     map_img_new = draw_pos(info_1, info_2)
     return info_1, info_2, map_img_new
 
-def environ(flag, info_1, info_2, act_1_p, act_2_p, map_img):
+def environ(flag, info_1, info_2, act_1, act_2, map_img):
     # info[2,5]: [x,y,blood,buff,projectile]
     # act[2,15]:  [3,2,1,0,-1,-2,-3,3,2,1,0,-1,-2,-3,shoot]
     # Yelly modification:
     # act form changed!! [dir1_ind, dir2_ind, shoot]  e.g. [6, 0, 1]
     # state and reward
+    '''
     act_1 = []
     act_1.append([np.argmax(act_1_p[0,:flag.mov_num]), np.argmax(act_1_p[0,flag.mov_num:2*flag.mov_num]), 0])
     act_1.append([np.argmax(act_1_p[1,:flag.mov_num]), np.argmax(act_1_p[1,flag.mov_num:2*flag.mov_num]), 0])
@@ -963,6 +964,9 @@ def environ(flag, info_1, info_2, act_1_p, act_2_p, map_img):
     act_2.append([np.argmax(act_2_p[1,:flag.mov_num]), np.argmax(act_2_p[1,flag.mov_num:2*flag.mov_num]), 0])
 
     state_1, state_2, reward_1, reward_2 = get_reward(info_1, info_2, act_1, act_2, map_img)
+    '''
+    act_1 = act_1.tolist()
+    act_2 = act_2.tolist()
 
     # new info and map
     # Yelly modification:

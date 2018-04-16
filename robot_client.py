@@ -268,18 +268,19 @@ def draw_info(screen, bars, info_1, info_2, raw_map_img):
 
     pygame.display.update()
 
+
 def draw_info_right(screen, info_1, info_2, raw_map_img):
     # top_right
-    draw_robot_right(screen, info_1[0][0]/2.0 + 8000*scale, info_1[0][1]/2.0, RED)
-    draw_robot_right(screen, info_1[1][0]/2.0 + 8000*scale, info_1[1][1]/2.0, RED)
+    draw_robot_right(screen, info_1[0][0]/2.0 + 8000*scale, info_1[0][1]/2.0, GREEN)
+    draw_robot_right(screen, info_1[1][0]/2.0 + 8000*scale, info_1[1][1]/2.0, GREEN)
     if visible([info_1[0][0], info_1[0][1]], [info_2[0][0], info_2[0][1]], raw_map_img)\
             or visible([info_1[1][0], info_1[1][1]], [info_2[0][0], info_2[0][1]], raw_map_img):
         #print("red see green1")
-        draw_robot_right(screen, int(info_2[0][0] /2.0) + 8000 * scale, int(info_2[0][1] /2.0), GREEN)
+        draw_robot_right(screen, int(info_2[0][0] /2.0) + 8000 * scale, int(info_2[0][1] /2.0), RED)
     if visible([info_1[0][0], info_1[0][1]], [info_2[1][0], info_2[1][1]], raw_map_img)\
             or visible([info_1[1][0], info_1[1][1]], [info_2[1][0], info_2[1][1]], raw_map_img):
         #print("red see green1")
-        draw_robot_right(screen, int(info_2[1][0] /2.0) + 8000 * scale, int(info_2[1][1] /2.0), GREEN)
+        draw_robot_right(screen, int(info_2[1][0] /2.0) + 8000 * scale, int(info_2[1][1] /2.0), RED)
 
     # bottom right
     draw_robot_right(screen, int(info_2[0][0] /2.0) + 8000 * scale, int(info_2[0][1] /2.0) + 2500*scale, RED)
@@ -318,5 +319,27 @@ def draw_state_right(screen, state_1, state_2, raw_map_img):
         draw_robot_right(screen, int(state_1[1]['x'] /2.0) + 8000 * scale, int(state_1[1]['y'] /2.0) + 2500 * scale, RED)
         #print("green see red2")
 
+def draw_way(screen, way):
+    if len(way)>3:
+        way=way[3:]
+    for w in way:
+        rect = [800+w[0]/2 - 5, w[1]/2 - 5, 5, 5]
+        pygame.draw.rect(screen, GREEN, rect, 0)
 
+def draw_info_z(screen, bars, info_1, info_2, raw_map_img, dst, way):
+    draw_init(screen, bars)
 
+    draw_robot(screen, info_1[0][:2], GREEN)
+    draw_robot(screen, info_2[0][:2], RED)
+
+    draw_blood(screen, info_1[0][:2], info_1[0][2])
+    draw_blood(screen, info_2[0][:2], info_2[0][2])
+
+    draw_info_right(screen, info_1, info_2, raw_map_img)
+    
+    draw_way(screen, way)
+
+    rect = [800+dst[0]/2 - 10, dst[1]/2 - 10, 10, 10]
+    pygame.draw.rect(screen, BLUE, rect, 0)
+
+    pygame.display.update()

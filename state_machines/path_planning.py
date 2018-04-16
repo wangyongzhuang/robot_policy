@@ -14,8 +14,6 @@ d_size = [_ // 2 for _ in robot_size]
 
 rescale = 0.1
 d_size = [int(math.ceil(_ * rescale)) for _ in d_size]
-act_dict = [-12, -8, -4, -2, -1, 0, 1, 2, 4, 8, 12]
-
 
 class PathPlanning:
     """
@@ -121,7 +119,7 @@ class PathPlanning:
         :param weight_map_init:
         :return:
         """
-        print ('# In a-star', cur_pos_init, dst_pos_init)
+        #print ('# In a-star', cur_pos_init, dst_pos_init)
 
         # resize
         weight_map = self.reshapeMap(weight_map_init)
@@ -292,16 +290,8 @@ class PathPlanning:
 
         act = self.algorithms[strategy](self, step, weight_map)
         act = np.array(np.round(act), dtype=int)
+        return act
 
-        ret_act = np.zeros(len(act_dict) * 2 + 1, dtype=int)
-        for i, a in enumerate(act):
-            idx = np.argmin(abs(np.array(act_dict) - a))
-            act[i] = act_dict[idx]
-            ret_act[idx + i * len(act_dict)] = 1
-        return ret_act
-
-
-    # TODO: Try maybe Dijkstra
 
 def draw(cur_pos,dst_pos,way,img):
     img = img.copy()
@@ -338,12 +328,9 @@ if __name__ == '__main__':
     weight_map[int(scale*3100):int(scale*3400), int(scale*3000):int(scale*5000), :] = 0
     weight_map[int(scale*4600):int(scale*4900), int(scale*0):int(scale*2000), :] = 0
 
-    dict_len = len(act_dict)
-
     while np.linalg.norm(abs(cur_pos - dst_pos), ord=np.inf) > 14:
         t = time.time()
         dp = pp.run(cur_pos, 14, weight_map, strategy='a-star')
-        dp = act_dict[np.argmax(dp[0: dict_len])], act_dict[np.argmax(dp[dict_len: 2 * dict_len])]
         cur_pos += dp
         print('cur pos {} to {}, time {:.2f}'.format(cur_pos, dst_pos, time.time() - t))
         draw(cur_pos,dst_pos,pp.way,weight_map)

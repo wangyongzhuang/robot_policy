@@ -60,7 +60,7 @@ def step(flag, info_1, info_2=None, map_img=None, show_info=False):
     act_2_p[1, 5] = act_2_p[1, 18] = 1
     act_2_p[0, -1] = act_2_p[1, -1] = 0
     #print 'time ',time()-t
-    print 'info', info_1[0][:2], info_1[1][:2]
+    #print 'info', info_1[0][:2], info_1[1][:2]
     if show_info:
         show(norm_attack_1.path_planner.way, norm_attack_2.path_planner.way, info_1, info_2)
     info_1, info_2, r1, r2, map_img_new = environ(flag, info_1, info_2, act_1_p, act_2_p, map_img)
@@ -79,7 +79,7 @@ def sendData(conn, info_1, info_2):
 
     #info_1 = get_info(data)
     #info_1, info_2, r1, r2, map_img_new = step(flag, info_1, info_2, map_img, show_info=False)
-    
+
     print 'Send data ...'
     #pdb.set_trace()
     data = '@%03d%03d%03d%03d%%'%(info[0][0], info[0][1], info[1][0], info[1][1])
@@ -110,12 +110,11 @@ def start_tcp_server(ip, port):
 
 if __name__ == '__main__':
     #conn = start_tcp_server('192.168.137.121',10001)
-    #screen = pygame.display.set_mode((1200, 500), 0, 32)
+    screen = pygame.display.set_mode((1200, 500), 0, 32)
     raw_map_img, bars = create_raw_map_img()
     for global_step in range(flag.steps):
         #get_info()
         info_1, info_2, map_img = step(flag, info_1, info_2, map_img, show_info=True)
         #sendData(conn, info_1)
-        sleep(0.5)
-        #pdb.set_trace()
+        #sleep(0.5)
         #draw_info(screen, bars, info_1, info_2, raw_map_img)
